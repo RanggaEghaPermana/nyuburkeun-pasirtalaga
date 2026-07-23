@@ -63,10 +63,6 @@ const strategies: Strategy[] = [
         label: "5 Menit Desain Logo Pakai Canva",
         url: "https://youtu.be/NJBIYkNqW8k?si=hD08nD8Rl1zrKIzc",
       },
-      {
-        label: "Cara Membuat Logo Pakai AI",
-        url: "https://youtu.be/uk2ht-3mZtQ?si=G76ttRpoeCbPP2AO",
-      },
     ],
   },
   {
