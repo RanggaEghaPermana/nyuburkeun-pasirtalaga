@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Hero } from "../components/Hero";
 import { InfoTileGrid } from "../components/ContentBlocks";
 import { PageMeta } from "../components/PageMeta";
@@ -122,6 +124,119 @@ const checklist = [
   },
 ];
 
+function BrandingGallery({ strategy }: { strategy: Strategy }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const activeImage = strategy.images[activeIndex];
+  const activeAlt = strategy.imageAlts[activeIndex];
+  const activeLabel = strategy.imageLabels?.[activeIndex] ?? `Desain ${activeIndex + 1}`;
+  const openExpanded = () => {
+    setIsZoomed(false);
+    setIsExpanded(true);
+  };
+
+  useEffect(() => {
+    if (!isExpanded) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsExpanded(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isExpanded]);
+
+  return (
+    <>
+      <div className="brand-gallery" role="group" aria-label={strategy.visualLabel}>
+        <div className="brand-gallery__viewer">
+          <div className="brand-gallery__toolbar">
+            <div>
+              <strong>{activeLabel}</strong>
+              <span>Desain {activeIndex + 1} dari {strategy.images.length}</span>
+            </div>
+            <button type="button" onClick={openExpanded}>
+              Perbesar
+              <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+
+          <button
+            className={`brand-gallery__canvas${activeIndex === 0 ? " is-logo" : " is-poster"}`}
+            type="button"
+            onClick={openExpanded}
+            aria-label={`Perbesar ${activeLabel}`}
+          >
+            <img src={activeImage} alt={activeAlt} />
+          </button>
+        </div>
+
+        <div className="brand-gallery__choices" aria-label="Pilih desain yang ingin dilihat">
+          {strategy.images.map((image, index) => {
+            const label = strategy.imageLabels?.[index] ?? `Desain ${index + 1}`;
+
+            return (
+              <button
+                className="brand-gallery__choice"
+                type="button"
+                aria-pressed={index === activeIndex}
+                onClick={() => setActiveIndex(index)}
+                key={image}
+              >
+                <span className="brand-gallery__choice-image">
+                  <img src={image} alt="" aria-hidden="true" loading="lazy" />
+                </span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {isExpanded ? createPortal((
+        <div
+          className="brand-lightbox"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setIsExpanded(false);
+          }}
+        >
+          <div className="brand-lightbox__dialog" role="dialog" aria-modal="true" aria-label={activeLabel}>
+            <div className="brand-lightbox__header">
+              <div>
+                <strong>{activeLabel}</strong>
+                <span>Poster ditampilkan utuh. Gunakan Zoom 100% untuk membaca detail kecil.</span>
+              </div>
+              <div className="brand-lightbox__controls">
+                <button
+                  type="button"
+                  aria-pressed={isZoomed}
+                  onClick={() => setIsZoomed((current) => !current)}
+                >
+                  {isZoomed ? "Muat layar" : "Zoom 100%"}
+                  <span aria-hidden="true">{isZoomed ? "↙" : "↗"}</span>
+                </button>
+                <button type="button" onClick={() => setIsExpanded(false)} aria-label="Tutup tampilan gambar penuh">
+                  Tutup <span aria-hidden="true">×</span>
+                </button>
+              </div>
+            </div>
+            <div className={`brand-lightbox__image${activeIndex === 0 ? " is-logo" : " is-poster"}${isZoomed ? " is-zoomed" : ""}`}>
+              <img src={activeImage} alt={activeAlt} />
+            </div>
+          </div>
+        </div>
+      ), document.body) : null}
+    </>
+  );
+}
+
 export default function BusinessPage() {
   return (
     <>
@@ -167,40 +282,24 @@ export default function BusinessPage() {
                 className={`strategy-card${strategy.kind ? ` strategy-card--${strategy.kind}` : ""}`}
                 key={strategy.title}
               >
-                <div
-                  className={`strategy-card__visual${strategy.images.length > 1 ? " strategy-card__visual--pair" : ""}${strategy.kind === "branding" ? " strategy-card__visual--stickers" : ""}`}
-                  aria-label={strategy.visualLabel}
-                  role={strategy.visualLabel ? "group" : undefined}
-                >
-                  {strategy.images.map((image, index) => (
-                    strategy.imageLabels ? (
-                      <figure className="strategy-card__design" key={image}>
-                        <figcaption>{strategy.imageLabels[index]}</figcaption>
-                        <img
-                          src={image}
-                          alt={strategy.imageAlts[index]}
-                          loading="lazy"
-                        />
-                      </figure>
-                    ) : (
+                {strategy.kind === "branding" ? (
+                  <BrandingGallery strategy={strategy} />
+                ) : (
+                  <div
+                    className={`strategy-card__visual${strategy.images.length > 1 ? " strategy-card__visual--pair" : ""}`}
+                    aria-label={strategy.visualLabel}
+                    role={strategy.visualLabel ? "group" : undefined}
+                  >
+                    {strategy.images.map((image, index) => (
                       <img
                         src={image}
                         alt={strategy.imageAlts[index]}
                         loading="lazy"
                         key={image}
                       />
-                    )
-                  ))}
-                </div>
-                {strategy.kind === "branding" ? (
-                  <div className="strategy-card__gallery-cue" aria-hidden="true">
-                    <span className="strategy-card__gallery-dots">
-                      {strategy.images.map((image) => <i key={image} />)}
-                    </span>
-                    <span>{strategy.images.length} desain · geser ke samping</span>
-                    <span className="strategy-card__gallery-arrow">→</span>
+                    ))}
                   </div>
-                ) : null}
+                )}
                 <div className="strategy-card__copy">
                   <h3>{strategy.title}</h3>
                   <p>{strategy.description}</p>
