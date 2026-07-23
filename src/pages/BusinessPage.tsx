@@ -140,17 +140,11 @@ export default function BusinessPage() {
         <section className="business-value page-section page-container">
           <SectionTitle>Mengapa Bisa Dijual?</SectionTitle>
           <div className="business-value__content">
-          <div className="business-products" role="group" aria-label="Contoh produk kompos dan eco enzyme">
+            <div className="business-products">
               <img
-                className="business-products__bottle"
-                src={assets.business.productBottle}
-                alt="Botol berisi cairan eco enzyme"
-                loading="lazy"
-              />
-              <img
-                className="business-products__jar"
-                src={assets.business.productJar}
-                alt="Wadah berisi kompos matang"
+                className="business-products__showcase"
+                src={assets.business.productShowcase}
+                alt="Produk Eco Enzyme dan Kompos Organik dengan label Nyuburkeun di taman"
                 loading="lazy"
               />
             </div>

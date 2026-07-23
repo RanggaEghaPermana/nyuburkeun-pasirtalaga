@@ -52,6 +52,7 @@ export const assets = {
     hero: "/assets/usaha/image-37.png",
     productBottle: "/assets/usaha/image-38.png",
     productJar: "/assets/usaha/image-39.png",
+    productShowcase: "/assets/usaha/product-showcase-branded.png",
     targetGarden: "/assets/usaha/seedling-solid-11.png",
     targetFarmer: "/assets/usaha/building-wheat-solid-1.png",
     targetHome: "/assets/usaha/house-user-solid-1.png",
