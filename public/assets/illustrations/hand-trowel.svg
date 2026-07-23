@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" fill="none">
+  <defs>
+    <linearGradient id="trowel-metal" x1="118" y1="110" x2="204" y2="205" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF4EF"/>
+      <stop offset=".48" stop-color="#BDD3C9"/>
+      <stop offset="1" stop-color="#8BA99C"/>
+    </linearGradient>
+    <linearGradient id="trowel-handle" x1="187" y1="32" x2="138" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F3C665"/>
+      <stop offset="1" stop-color="#D28C32"/>
+    </linearGradient>
+    <filter id="trowel-shadow" x="63" y="21" width="204" height="208" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0C362B" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <ellipse cx="154" cy="210" rx="78" ry="10" fill="#0C362B" opacity=".12"/>
+  <g filter="url(#trowel-shadow)" stroke="#0C362B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" transform="rotate(26 160 120)">
+    <path d="M141 101h38v44h-38z" fill="#9CB9AD"/>
+    <path d="M133 113h54" opacity=".35"/>
+    <path d="M160 137c-30 0-56 17-56 39 0 19 24 31 56 39 32-8 56-20 56-39 0-22-26-39-56-39Z" fill="url(#trowel-metal)"/>
+    <path d="M160 146v55" opacity=".25"/>
+    <path d="M137 45c0-11.6 9.4-21 21-21h4c11.6 0 21 9.4 21 21v60c0 9.9-8.1 18-18 18h-10c-9.9 0-18-8.1-18-18V45Z" fill="url(#trowel-handle)"/>
+    <path d="M148 47c0-6.6 5.4-12 12-12s12 5.4 12 12-5.4 12-12 12-12-5.4-12-12Z" fill="#FFF1BD"/>
+    <path d="M148 81h24M148 94h24" opacity=".3"/>
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" fill="none">
+  <defs>
+    <linearGradient id="cup-glass" x1="101" y1="56" x2="202" y2="199" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FFFF" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#C6E8E6" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="cup-water" x1="104" y1="121" x2="198" y2="194" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#69D3E7"/>
+      <stop offset="1" stop-color="#2598C7"/>
+    </linearGradient>
+    <filter id="cup-shadow" x="60" y="43" width="210" height="180" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0C362B" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <ellipse cx="160" cy="207" rx="72" ry="10" fill="#0C362B" opacity=".12"/>
+  <g filter="url(#cup-shadow)" stroke="#0C362B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M93 64h122l-12 125c-.8 8.4-7.9 14.8-16.3 14.8h-65.4c-8.4 0-15.5-6.4-16.3-14.8L93 64Z" fill="url(#cup-glass)"/>
+    <path d="M214 91h12c24 0 39 17 39 38s-15 38-39 38h-17l3-26h14c8.5 0 14-5 14-12s-5.5-12-14-12h-14l2-26Z" fill="#EAF8F5"/>
+    <path d="m101 121 6 65c.7 7 6.6 12.2 13.6 12.2h66.8c7 0 12.9-5.2 13.6-12.2l6-65c-22 7-40-5-62 1-16 4-28 3-44-1Z" fill="url(#cup-water)"/>
+    <path d="M101 121c16 4 28 5 44 1 22-6 40 6 62-1" fill="none"/>
+    <path d="M89 63c0-7.2 5.8-13 13-13h104c7.2 0 13 5.8 13 13s-5.8 13-13 13H102c-7.2 0-13-5.8-13-13Z" fill="#F8FFFF"/>
+    <path d="M121 87h19M119 101h27" opacity=".35"/>
+    <path d="M125 78c0-16 8-28 24-37" fill="none" stroke="#46B8D7"/>
+    <path d="M149 41c2 12-2 19-12 24-7-9-3-18 12-24Z" fill="#78D8EA"/>
+    <path d="M180 85c9 7 12 15 8 26" opacity=".42"/>
+  </g>
+</svg>

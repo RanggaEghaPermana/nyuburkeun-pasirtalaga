@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" fill="none">
+  <defs>
+    <linearGradient id="jug-glass" x1="77" y1="47" x2="224" y2="204" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FFFF" stop-opacity=".94"/>
+      <stop offset="1" stop-color="#BFDCD7" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="jug-water" x1="87" y1="118" x2="210" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70D5E7"/>
+      <stop offset="1" stop-color="#258DBD"/>
+    </linearGradient>
+    <filter id="jug-shadow" x="48" y="34" width="234" height="192" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0C362B" flood-opacity=".16"/>
+    </filter>
+  </defs>
+  <ellipse cx="160" cy="211" rx="83" ry="10" fill="#0C362B" opacity=".12"/>
+  <g filter="url(#jug-shadow)" stroke="#0C362B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M72 67h126l34 22-36 10v91c0 11-9 20-20 20H100c-11 0-20-9-20-20V89l-8-22Z" fill="url(#jug-glass)"/>
+    <path d="M199 92h17c29 0 50 21 50 49 0 27-20 47-48 47h-22v-27h21c13 0 22-8 22-21 0-12-9-21-22-21h-18V92Z" fill="#EAF7F3"/>
+    <path d="M81 121h114v69c0 10.5-8.5 19-19 19h-76c-10.5 0-19-8.5-19-19v-69Z" fill="url(#jug-water)"/>
+    <path d="M81 121c22 7 39-5 58 0 20 6 35-3 56 0" fill="none"/>
+    <path d="M69 66c0-7.2 5.8-13 13-13h106c7.2 0 13 5.8 13 13s-5.8 13-13 13H82c-7.2 0-13-5.8-13-13Z" fill="#F8FFFF"/>
+    <path d="M101 99h22M101 117h30M101 137h22M101 157h30M101 177h22" opacity=".4"/>
+    <path d="M157 45c0-10 6-18 17-24 8 9 6 18-5 27" fill="#6ED2E5"/>
+    <path d="M169 47c-6-10-4-19 5-26"/>
+  </g>
+</svg>

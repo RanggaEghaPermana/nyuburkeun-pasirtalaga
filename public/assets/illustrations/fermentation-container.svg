@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" fill="none">
+  <defs>
+    <linearGradient id="jar-glass" x1="83" y1="61" x2="220" y2="211" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F9FFFF" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#C4DFD8" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="jar-liquid" x1="94" y1="119" x2="220" y2="204" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0B64B" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#CC762F" stop-opacity=".94"/>
+    </linearGradient>
+    <linearGradient id="jar-lid" x1="91" y1="38" x2="225" y2="77" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#32BA83"/>
+      <stop offset="1" stop-color="#087253"/>
+    </linearGradient>
+    <filter id="jar-shadow" x="52" y="24" width="216" height="204" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0C362B" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <ellipse cx="160" cy="211" rx="82" ry="11" fill="#0C362B" opacity=".12"/>
+  <g filter="url(#jar-shadow)" stroke="#0C362B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M91 72h138v116c0 13.3-10.7 24-24 24h-90c-13.3 0-24-10.7-24-24V72Z" fill="url(#jar-glass)"/>
+    <path d="M93 119h134v68c0 12.7-10.3 23-23 23h-88c-12.7 0-23-10.3-23-23v-68Z" fill="url(#jar-liquid)"/>
+    <path d="M93 119c19 6 34-5 52 0 22 7 43-6 82 0" fill="none"/>
+    <path d="M111 129c15-10 31-6 38 8-8 15-24 18-38 8v-16Z" fill="#F3D35A"/>
+    <path d="M125 131c-4 5-4 10 0 15" opacity=".34"/>
+    <path d="M166 148c12-15 30-17 43-5-1 18-15 28-34 22l-9-17Z" fill="#E76B42"/>
+    <path d="M180 147c-1 8 3 14 11 18" opacity=".32"/>
+    <path d="M122 177c10-11 24-11 34 0-5 14-17 19-31 12l-3-12Z" fill="#8FC858"/>
+    <path d="M93 74h134" opacity=".35"/>
+    <path d="M87 50c0-8.3 6.7-15 15-15h116c8.3 0 15 6.7 15 15v25H87V50Z" fill="url(#jar-lid)"/>
+    <path d="M101 51h118M101 62h118" opacity=".33"/>
+    <path d="M119 34v-4c0-8.8 7.2-16 16-16h50c8.8 0 16 7.2 16 16v4" fill="none"/>
+    <path d="M139 34v-4h42v4" stroke="#F3C665"/>
+    <circle cx="209" cy="91" r="5" fill="#F8FFFF" stroke-width="3" opacity=".8"/>
+    <circle cx="209" cy="106" r="3.5" fill="#F8FFFF" stroke-width="2.5" opacity=".65"/>
+  </g>
+</svg>

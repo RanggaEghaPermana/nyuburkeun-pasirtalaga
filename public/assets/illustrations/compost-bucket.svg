@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" fill="none">
+  <defs>
+    <linearGradient id="bucket-body" x1="99" y1="70" x2="228" y2="204" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16A977"/>
+      <stop offset="1" stop-color="#087253"/>
+    </linearGradient>
+    <linearGradient id="bucket-lid" x1="92" y1="54" x2="226" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#42C491"/>
+      <stop offset="1" stop-color="#0A805D"/>
+    </linearGradient>
+    <filter id="bucket-shadow" x="48" y="25" width="224" height="204" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#0C362B" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <ellipse cx="160" cy="209" rx="78" ry="11" fill="#0C362B" opacity=".12"/>
+  <g filter="url(#bucket-shadow)" stroke="#0C362B" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M94 78h132l-10 119c-.7 8-7.4 14-15.4 14h-81.2c-8 0-14.7-6-15.4-14L94 78Z" fill="url(#bucket-body)"/>
+    <path d="M88 67c0-7.2 5.8-13 13-13h118c7.2 0 13 5.8 13 13v13H88V67Z" fill="url(#bucket-lid)"/>
+    <path d="M116 53v-6c0-9.4 7.6-17 17-17h54c9.4 0 17 7.6 17 17v6"/>
+    <path d="M130 52V45h60v7" fill="#F8D985"/>
+    <path d="M107 93h106" opacity=".35"/>
+    <path d="M117 105l5.5 82M203 105l-5.5 82" opacity=".22"/>
+    <circle cx="133" cy="122" r="4.5" fill="#F7F5EE" stroke-width="3"/>
+    <circle cx="160" cy="122" r="4.5" fill="#F7F5EE" stroke-width="3"/>
+    <circle cx="187" cy="122" r="4.5" fill="#F7F5EE" stroke-width="3"/>
+    <circle cx="136" cy="151" r="4.5" fill="#F7F5EE" stroke-width="3"/>
+    <circle cx="160" cy="151" r="4.5" fill="#F7F5EE" stroke-width="3"/>
+    <circle cx="184" cy="151" r="4.5" fill="#F7F5EE" stroke-width="3"/>
+    <path d="M145 180c7-14 23-14 30 0-8.7 8-21.3 8-30 0Z" fill="#C9E86C" stroke-width="4"/>
+    <path d="M160 181v-17" stroke-width="4"/>
+  </g>
+</svg>
