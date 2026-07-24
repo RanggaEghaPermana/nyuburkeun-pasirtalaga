@@ -8,45 +8,67 @@ import {
 import type { WasteShape } from "./wasteItems";
 import {
   crumpleGeometry,
-  leafBladeGeometry,
+  dryLeafGeometry,
+  leafMidribCurve,
+  leafVeinCurves,
+  petioleCurve,
   roundedPlateGeometry,
   smoothLatheGeometry,
   sweptRibbonGeometry,
   warpGeometry,
+  type LeafShape,
 } from "./wasteGeometry";
 
 type WasteObjectProps = {
   shape: WasteShape;
 };
 
-const PEEL_THICKNESS = 0.009;
+const PEEL_THICKNESS = 0.01;
 
-// Empat pelepah yang memencar dari pangkal lalu merunduk, dengan ujung sedikit
-// terangkat seperti kulit pisang yang baru dibuka.
-const PEEL_STRIPS = [0, 0.5, 1, 1.5].map((turn, index) => {
+// Pelepah dibuat lebar dan merunduk, dengan cekungan menghadap ke bawah supaya
+// sisi kuning yang terlihat dari atas dan sisi pucat berada di dalam.
+const PEEL_STRIPS = [0.05, 0.55, 1.02, 1.52].map((turn, index) => {
   const angle = turn * Math.PI;
-  const lean = index % 2 === 0 ? 1 : 0.88;
+  const reach = index % 2 === 0 ? 1 : 0.9;
   const dirX = Math.cos(angle);
   const dirZ = Math.sin(angle);
-  const at = (radius: number, y: number) => new Vector3(dirX * radius, y, dirZ * radius * lean);
+  const at = (radius: number, y: number) => new Vector3(dirX * radius * reach, y, dirZ * radius * reach);
 
   return new CatmullRomCurve3([
-    at(0.03, 0.34),
-    at(0.13, 0.22),
-    at(0.31, 0.02),
-    at(0.44, -0.24),
-    at(0.47, -0.42),
+    at(0.02, 0.29),
+    at(0.13, 0.2),
+    at(0.25, 0.05),
+    at(0.33, -0.17),
+    at(0.37, -0.37),
   ]);
 });
 
-const PEEL_WIDTH = (progress: number) => 0.19 - (progress * 0.13);
+// Lebar meruncing sampai hampir nol supaya ujungnya lancip. Potongan lurus
+// membuat ujung pelepah tampak terpotong tumpul seperti sepatu.
+const PEEL_WIDTH = (progress: number) => (0.3 * (1 - (progress ** 2.4))) + 0.012;
 
 const PEEL_SURFACES = PEEL_STRIPS.map((curve) => ({
-  outer: sweptRibbonGeometry({ curve, width: PEEL_WIDTH, offset: PEEL_THICKNESS }),
-  inner: sweptRibbonGeometry({ curve, width: PEEL_WIDTH, offset: -PEEL_THICKNESS }),
+  outer: sweptRibbonGeometry({
+    curve,
+    width: PEEL_WIDTH,
+    arcSpan: Math.PI * 0.5,
+    curl: -1,
+    offset: PEEL_THICKNESS,
+  }),
+  inner: sweptRibbonGeometry({
+    curve,
+    width: PEEL_WIDTH,
+    arcSpan: Math.PI * 0.5,
+    curl: -1,
+    offset: -PEEL_THICKNESS,
+  }),
 }));
 
-const LEAF_BLADE = leafBladeGeometry(0.92, 0.44, 0.014);
+const LEAF: LeafShape = { length: 0.98, width: 0.44, fold: 0.52, curl: 0.5, wave: 0.014 };
+const LEAF_BLADE = dryLeafGeometry(LEAF);
+const LEAF_MIDRIB = new TubeGeometry(leafMidribCurve(LEAF), 32, 0.0085, 7, false);
+const LEAF_VEINS = leafVeinCurves(LEAF).map((curve) => new TubeGeometry(curve, 14, 0.0042, 6, false));
+const LEAF_PETIOLE = new TubeGeometry(petioleCurve(LEAF), 16, 0.013, 8, false);
 
 const JAR_BODY = smoothLatheGeometry([
   [0.001, -0.44],
@@ -108,24 +130,25 @@ const BATTERY_BODY = smoothLatheGeometry([
   [0.001, 0.56],
 ]);
 
-const TOTE_BODY = warpGeometry(roundedPlateGeometry(0.74, 0.64, 0.3, 0.09), (vertex) => {
+const TOTE_BODY = warpGeometry(roundedPlateGeometry(0.74, 0.64, 0.3, 0.11), (vertex) => {
   const height = Math.min(Math.max((vertex.y + 0.32) / 0.64, 0), 1);
   const puff = Math.sin(height * Math.PI);
-  vertex.x *= 0.9 + (puff * 0.12);
-  vertex.z *= 0.52 + (puff * 0.72);
-  vertex.x += Math.sin(height * 7.2) * 0.012;
+  vertex.x *= 0.86 + (puff * 0.16);
+  vertex.z *= 0.4 + (puff * 0.86);
+  vertex.y -= (1 - puff) * 0.04 * (height > 0.5 ? 1 : -1);
+  vertex.x += Math.sin(height * 6.4) * 0.016;
 });
 
-const TOTE_HANDLES = [-0.085, 0.085].map((z) => new TubeGeometry(
+const TOTE_HANDLES = [-0.08, 0.08].map((z, index) => new TubeGeometry(
   new CatmullRomCurve3([
-    new Vector3(-0.24, 0.26, z * 0.9),
-    new Vector3(-0.19, 0.46, z),
-    new Vector3(0, 0.53, z * 1.1),
-    new Vector3(0.19, 0.46, z),
-    new Vector3(0.24, 0.26, z * 0.9),
+    new Vector3(-0.23, 0.24, z * 0.9),
+    new Vector3(-0.2, 0.44 - (index * 0.02), z),
+    new Vector3(0, 0.5 - (index * 0.03), z * 1.15),
+    new Vector3(0.2, 0.44 - (index * 0.02), z),
+    new Vector3(0.23, 0.24, z * 0.9),
   ]),
-  26,
-  0.026,
+  28,
+  0.021,
   8,
   false,
 ));
@@ -133,13 +156,22 @@ const TOTE_HANDLES = [-0.085, 0.085].map((z) => new TubeGeometry(
 const CARDBOARD_BODY = roundedPlateGeometry(0.8, 0.46, 0.36, 0.026);
 const CARDBOARD_FLAP = roundedPlateGeometry(0.78, 0.32, 0.026, 0.018);
 
+// Lengkungan kertas dibatasi kecil karena tulisan ditempel pada offset tetap di
+// atasnya; warp yang besar akan mendorong kertas melewati tulisannya sendiri.
+const NEWSPAPER_WARP = 0.008;
+
 const NEWSPAPER_SHEETS = [0, 1, 2].map((index) => warpGeometry(
-  roundedPlateGeometry(0.72 - (index * 0.022), 0.5 - (index * 0.018), 0.022, 0.02),
+  roundedPlateGeometry(0.72 - (index * 0.02), 0.48 - (index * 0.016), 0.02, 0.018),
   (vertex) => {
-    const along = vertex.x / 0.36;
-    vertex.z += (along * along * 0.05) + (Math.sin(along * 2.4 + index) * 0.014);
+    const across = vertex.y / 0.24;
+    vertex.z += (across * across * NEWSPAPER_WARP) + (Math.sin(across * 2.2 + index) * 0.004);
   },
 ));
+
+const NEWSPAPER_FOLD = warpGeometry(roundedPlateGeometry(0.72, 0.24, 0.022, 0.018), (vertex) => {
+  const along = vertex.x / 0.36;
+  vertex.z += along * along * NEWSPAPER_WARP;
+});
 
 const TISSUE_WADS = [
   { position: [-0.15, 0.03, 0.02] as const, scale: [0.86, 0.94, 0.8] as const, seed: 2.3, color: "#f6f3ea" },
@@ -157,44 +189,59 @@ const TISSUE_FOLDS = [
 
 const TISSUE_FOLD_PLATE = roundedPlateGeometry(0.26, 0.2, 0.012, 0.02);
 
-// Popok terpakai digulung: bagian tengah menyempit dan permukaannya sedikit
-// tidak rata karena isinya menggembung.
-const DIAPER_BODY = crumpleGeometry(
-  warpGeometry(new SphereGeometry(0.42, 24, 18), (vertex) => {
-    const waist = 1 - (Math.cos(vertex.y * 5.6) * 0.16);
-    vertex.x *= 1.42 * waist;
-    vertex.y *= 0.82;
-    vertex.z *= 0.92 * waist;
-  }),
-  0.022,
-  4.4,
-);
+// Popok bekas yang sudah digulung rapat: gulungan tong pendek dengan tepi
+// lipatan yang membelit dan dua pita perekat melintang.
+const DIAPER_ROLL = crumpleGeometry(smoothLatheGeometry([
+  [0.001, -0.36],
+  [0.18, -0.37],
+  [0.29, -0.32],
+  [0.325, -0.16],
+  [0.335, 0.06],
+  [0.315, 0.24],
+  [0.21, 0.34],
+  [0.001, 0.36],
+]), 0.016, 6.2);
 
-const DIAPER_TAB = roundedPlateGeometry(0.2, 0.24, 0.11, 0.05);
+const DIAPER_WRAP = new TubeGeometry(
+  new CatmullRomCurve3(Array.from({ length: 34 }, (_, index) => {
+    const progress = index / 33;
+    const angle = progress * Math.PI * 3.1;
+    const radius = 0.318 + (Math.sin(progress * Math.PI) * 0.022);
+    return new Vector3(
+      Math.cos(angle) * radius,
+      -0.3 + (progress * 0.6),
+      Math.sin(angle) * radius,
+    );
+  })),
+  70,
+  0.019,
+  8,
+  false,
+);
 
 export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "peel") {
     return (
-      <group dispose={null} rotation={[0.1, 0.3, -0.06]}>
-        <mesh position={[0, 0.36, 0]}>
-          <sphereGeometry args={[0.075, 14, 10]} />
-          <meshStandardMaterial color="#e6c34a" roughness={0.78} />
+      <group dispose={null} rotation={[0.08, 0.26, -0.05]}>
+        <mesh position={[0, 0.31, 0]} scale={[1, 0.8, 1]}>
+          <sphereGeometry args={[0.1, 16, 12]} />
+          <meshStandardMaterial color="#e9c53f" roughness={0.74} />
         </mesh>
-        <mesh position={[0, 0.47, 0]} rotation={[0.12, 0, 0.16]}>
-          <cylinderGeometry args={[0.032, 0.055, 0.16, 10]} />
+        <mesh position={[0, 0.44, 0.01]} rotation={[0.14, 0, 0.12]}>
+          <cylinderGeometry args={[0.03, 0.055, 0.15, 10]} />
           <meshStandardMaterial color="#6d5024" roughness={0.94} />
         </mesh>
         {PEEL_SURFACES.map((surfaces, index) => (
           <group key={index}>
             <mesh geometry={surfaces.outer}>
               <meshStandardMaterial
-                color={index % 2 === 0 ? "#edc132" : "#f3cd45"}
-                roughness={0.68}
+                color={index % 2 === 0 ? "#eec334" : "#f4ce47"}
+                roughness={0.66}
                 side={DoubleSide}
               />
             </mesh>
             <mesh geometry={surfaces.inner}>
-              <meshStandardMaterial color="#f7ecc0" roughness={0.86} side={DoubleSide} />
+              <meshStandardMaterial color="#f8eec6" roughness={0.88} side={DoubleSide} />
             </mesh>
           </group>
         ))}
@@ -204,26 +251,19 @@ export function WasteObject({ shape }: WasteObjectProps) {
 
   if (shape === "leaf") {
     return (
-      <group rotation={[0.34, 0.22, -0.38]}>
+      <group rotation={[0.16, 0.28, -0.14]}>
         <mesh geometry={LEAF_BLADE}>
-          <meshStandardMaterial color="#b07c3c" roughness={0.9} side={DoubleSide} />
+          <meshStandardMaterial color="#b0783a" roughness={0.92} side={DoubleSide} />
         </mesh>
-        <mesh position={[0, 0, 0.014]} rotation={[0, 0, 0]}>
-          <cylinderGeometry args={[0.008, 0.016, 0.86, 8]} />
-          <meshStandardMaterial color="#7a5326" roughness={0.95} />
+        <mesh geometry={LEAF_MIDRIB}>
+          <meshStandardMaterial color="#84592a" roughness={0.95} />
         </mesh>
-        {[-0.26, -0.08, 0.1, 0.26].map((offset, index) => (
-          <mesh
-            key={offset}
-            position={[offset, 0, 0.02]}
-            rotation={[0, 0, index % 2 === 0 ? 0.9 : -0.9]}
-          >
-            <cylinderGeometry args={[0.004, 0.008, 0.22, 6]} />
-            <meshStandardMaterial color="#8a6030" roughness={0.96} />
+        {LEAF_VEINS.map((geometry, index) => (
+          <mesh geometry={geometry} key={index}>
+            <meshStandardMaterial color="#96662f" roughness={0.96} />
           </mesh>
         ))}
-        <mesh position={[-0.56, -0.03, 0.01]} rotation={[0, 0, 1.42]}>
-          <cylinderGeometry args={[0.012, 0.019, 0.24, 8]} />
+        <mesh geometry={LEAF_PETIOLE}>
           <meshStandardMaterial color="#6f4a21" roughness={0.95} />
         </mesh>
       </group>
@@ -252,7 +292,7 @@ export function WasteObject({ shape }: WasteObjectProps) {
           <meshStandardMaterial color="#c1913a" metalness={0.55} roughness={0.42} side={DoubleSide} />
         </mesh>
         <mesh position={[0, -0.08, 0]}>
-          <cylinderGeometry args={[0.357, 0.352, 0.28, 26, 1, true, -0.75, 1.5]} />
+          <cylinderGeometry args={[0.359, 0.354, 0.28, 26, 1, true, -0.75, 1.5]} />
           <meshStandardMaterial color="#fdf8ec" roughness={0.9} side={DoubleSide} />
         </mesh>
       </group>
@@ -263,10 +303,10 @@ export function WasteObject({ shape }: WasteObjectProps) {
     return (
       <group rotation={[0.09, -0.24, -0.05]}>
         <mesh geometry={TOTE_BODY} position={[0, -0.06, 0]}>
-          <meshStandardMaterial color="#d9bb87" roughness={0.95} side={DoubleSide} />
+          <meshStandardMaterial color="#d9bb87" roughness={0.96} side={DoubleSide} />
         </mesh>
-        <mesh position={[0, 0.24, 0]} scale={[0.7, 0.05, 0.24]}>
-          <sphereGeometry args={[0.5, 18, 10]} />
+        <mesh position={[0, 0.22, 0]} rotation={[0, 0, 0.04]} scale={[0.66, 0.045, 0.2]}>
+          <sphereGeometry args={[0.5, 20, 10]} />
           <meshStandardMaterial color="#c2a273" roughness={0.96} />
         </mesh>
         {TOTE_HANDLES.map((geometry, index) => (
@@ -274,8 +314,8 @@ export function WasteObject({ shape }: WasteObjectProps) {
             <meshStandardMaterial color="#a9814c" roughness={0.92} />
           </mesh>
         ))}
-        <mesh position={[0, -0.1, 0.14]} rotation={[0.06, 0, 0]}>
-          <circleGeometry args={[0.14, 24]} />
+        <mesh position={[0, -0.1, 0.128]} rotation={[0.06, 0, 0]}>
+          <circleGeometry args={[0.13, 24]} />
           <meshStandardMaterial color="#2f7d43" roughness={0.82} />
         </mesh>
       </group>
@@ -312,13 +352,13 @@ export function WasteObject({ shape }: WasteObjectProps) {
 
   if (shape === "newspaper") {
     return (
-      <group rotation={[0.18, -0.24, 0.12]}>
+      <group rotation={[-0.62, -0.2, 0.08]}>
         {NEWSPAPER_SHEETS.map((geometry, index) => (
           <mesh
             geometry={geometry}
             key={index}
-            position={[index * 0.008, index * 0.014, index * -0.02]}
-            rotation={[0, 0, index * 0.03]}
+            position={[index * 0.006, index * -0.008, index * -0.021]}
+            rotation={[0, 0, index * 0.026]}
           >
             <meshStandardMaterial
               color={index === 0 ? "#efebdf" : "#e2ddcf"}
@@ -327,23 +367,30 @@ export function WasteObject({ shape }: WasteObjectProps) {
             />
           </mesh>
         ))}
-        <mesh position={[-0.36, 0.01, -0.02]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.032, 0.032, 0.5, 12, 1, false, 0, Math.PI]} />
-          <meshStandardMaterial color="#e7e2d5" roughness={0.97} side={DoubleSide} />
+        <mesh geometry={NEWSPAPER_FOLD} position={[0.004, 0.12, 0.026]} rotation={[0.16, 0, 0.01]}>
+          <meshStandardMaterial color="#f4f1e6" roughness={0.96} side={DoubleSide} />
         </mesh>
-        <mesh position={[0.02, 0.17, 0.036]}>
-          <planeGeometry args={[0.44, 0.07]} />
-          <meshStandardMaterial color="#3c4a46" roughness={0.98} />
+        <mesh position={[0, 0.18, 0.056]}>
+          <planeGeometry args={[0.48, 0.07]} />
+          <meshStandardMaterial color="#33403c" roughness={0.98} />
         </mesh>
-        {[0.05, -0.03, -0.11, -0.19].map((y) => (
-          <mesh key={y} position={[0.08, y, 0.036]}>
-            <planeGeometry args={[0.36, 0.014]} />
-            <meshStandardMaterial color="#6d7a75" roughness={1} />
+        <mesh position={[0, 0.12, 0.054]}>
+          <planeGeometry args={[0.42, 0.01]} />
+          <meshStandardMaterial color="#7b8681" roughness={1} />
+        </mesh>
+        <mesh position={[-0.19, 0.06, 0.052]}>
+          <planeGeometry args={[0.2, 0.05]} />
+          <meshStandardMaterial color="#2f7362" roughness={0.94} />
+        </mesh>
+        {[-0.04, -0.09, -0.14, -0.19].map((y) => (
+          <mesh key={y} position={[0.03, y, 0.03]}>
+            <planeGeometry args={[0.46, 0.014]} />
+            <meshStandardMaterial color="#5f6c67" roughness={1} />
           </mesh>
         ))}
-        <mesh position={[-0.2, -0.09, 0.036]}>
-          <planeGeometry args={[0.16, 0.2]} />
-          <meshStandardMaterial color="#33796a" roughness={0.92} />
+        <mesh position={[-0.21, -0.13, 0.03]}>
+          <planeGeometry args={[0.16, 0.14]} />
+          <meshStandardMaterial color="#7d8983" roughness={0.98} />
         </mesh>
       </group>
     );
@@ -377,29 +424,22 @@ export function WasteObject({ shape }: WasteObjectProps) {
 
   if (shape === "diaper") {
     return (
-      <group rotation={[0.2, 0.24, -0.1]}>
-        <mesh geometry={DIAPER_BODY}>
-          <meshStandardMaterial color="#f5f2e9" roughness={0.93} />
+      <group rotation={[0.1, 0.3, Math.PI / 2]}>
+        <mesh geometry={DIAPER_ROLL}>
+          <meshStandardMaterial color="#f5f2e9" roughness={0.94} />
         </mesh>
-        {[-0.46, 0.46].map((x) => (
-          <mesh
-            geometry={DIAPER_TAB}
-            key={x}
-            position={[x, 0.08, 0]}
-            rotation={[0, 0, x < 0 ? -0.34 : 0.34]}
-          >
-            <meshStandardMaterial color="#eaeff2" roughness={0.9} />
+        <mesh geometry={DIAPER_WRAP}>
+          <meshStandardMaterial color="#e7e3d8" roughness={0.95} />
+        </mesh>
+        {[-0.16, 0.16].map((y) => (
+          <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.332, 0.021, 8, 30]} />
+            <meshStandardMaterial color="#84c0d8" roughness={0.84} />
           </mesh>
         ))}
-        {[-0.3, 0.3].map((x) => (
-          <mesh key={x} position={[x, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <torusGeometry args={[0.24, 0.016, 8, 22]} />
-            <meshStandardMaterial color="#dfe6ea" roughness={0.92} />
-          </mesh>
-        ))}
-        <mesh position={[0, 0.14, 0]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.42]}>
-          <torusGeometry args={[0.26, 0.032, 9, 26]} />
-          <meshStandardMaterial color="#7fbdd6" roughness={0.84} />
+        <mesh position={[0, 0.37, 0]} scale={[0.9, 0.5, 0.9]}>
+          <sphereGeometry args={[0.16, 16, 12]} />
+          <meshStandardMaterial color="#eceae1" roughness={0.95} />
         </mesh>
       </group>
     );
@@ -409,23 +449,27 @@ export function WasteObject({ shape }: WasteObjectProps) {
     return (
       <group rotation={[0, 0.4, Math.PI / 2]}>
         <mesh geometry={BATTERY_BODY}>
-          <meshStandardMaterial color="#2f343a" metalness={0.34} roughness={0.5} />
+          <meshStandardMaterial color="#3a3f45" metalness={0.4} roughness={0.44} />
         </mesh>
         <mesh position={[0, 0.48, 0]}>
           <cylinderGeometry args={[0.113, 0.113, 0.09, 20]} />
           <meshStandardMaterial color="#c9cdd0" metalness={0.7} roughness={0.24} />
         </mesh>
         <mesh position={[0, -0.53, 0]}>
-          <cylinderGeometry args={[0.245, 0.245, 0.035, 24]} />
+          <cylinderGeometry args={[0.247, 0.247, 0.035, 24]} />
           <meshStandardMaterial color="#b9bec1" metalness={0.66} roughness={0.28} />
         </mesh>
-        <mesh position={[0, 0.06, 0]}>
-          <cylinderGeometry args={[0.283, 0.283, 0.3, 26, 1, true]} />
-          <meshStandardMaterial color="#d9542f" roughness={0.52} side={DoubleSide} />
+        <mesh position={[0, -0.02, 0]}>
+          <cylinderGeometry args={[0.288, 0.288, 0.86, 28, 1, true]} />
+          <meshStandardMaterial color="#cf4b28" roughness={0.5} side={DoubleSide} />
         </mesh>
-        <mesh position={[0, -0.2, 0]}>
-          <cylinderGeometry args={[0.283, 0.283, 0.06, 26, 1, true]} />
-          <meshStandardMaterial color="#e8e2d2" roughness={0.6} side={DoubleSide} />
+        <mesh position={[0, -0.36, 0]}>
+          <cylinderGeometry args={[0.29, 0.29, 0.14, 28, 1, true]} />
+          <meshStandardMaterial color="#efe7d4" roughness={0.58} side={DoubleSide} />
+        </mesh>
+        <mesh position={[0, 0.3, 0]}>
+          <cylinderGeometry args={[0.292, 0.292, 0.1, 28, 1, true]} />
+          <meshStandardMaterial color="#23262a" roughness={0.55} side={DoubleSide} />
         </mesh>
       </group>
     );
@@ -455,17 +499,17 @@ export function WasteObject({ shape }: WasteObjectProps) {
         </mesh>
       ))}
       <mesh geometry={BULB_BASE}>
-        <meshStandardMaterial color="#b6b2a6" metalness={0.62} roughness={0.36} />
+        <meshStandardMaterial color="#8e8a7f" metalness={0.68} roughness={0.34} />
       </mesh>
       {[-0.3, -0.38, -0.46].map((y) => (
         <mesh key={y} position={[0, y, 0]}>
-          <torusGeometry args={[0.152, 0.017, 7, 22]} />
-          <meshStandardMaterial color="#a49f92" metalness={0.6} roughness={0.42} />
+          <torusGeometry args={[0.158, 0.018, 7, 24]} />
+          <meshStandardMaterial color="#726e64" metalness={0.62} roughness={0.4} />
         </mesh>
       ))}
       <mesh position={[0, -0.65, 0]}>
-        <sphereGeometry args={[0.06, 14, 10]} />
-        <meshStandardMaterial color="#4b4a46" metalness={0.5} roughness={0.5} />
+        <sphereGeometry args={[0.062, 14, 10]} />
+        <meshStandardMaterial color="#3f3e3a" metalness={0.5} roughness={0.5} />
       </mesh>
     </group>
   );
