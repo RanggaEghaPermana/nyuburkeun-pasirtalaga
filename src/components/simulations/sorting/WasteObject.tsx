@@ -25,40 +25,49 @@ type WasteObjectProps = {
 
 const PEEL_THICKNESS = 0.01;
 
-// Pelepah dibuat lebar dan merunduk, dengan cekungan menghadap ke bawah supaya
-// sisi kuning yang terlihat dari atas dan sisi pucat berada di dalam.
-const PEEL_STRIPS = [0.05, 0.55, 1.02, 1.52].map((turn, index) => {
+// Kulit pisang yang dibuang itu tergeletak, bukan berdiri. Pelepah yang
+// merunduk tegak terbaca sebagai kaki, dan pada bagian yang hampir vertikal
+// kerangka sapuan ikut berbalik sehingga sisi pucat yang menghadap kamera.
+// Pelepah karena itu dibuat memencar mendatar dengan ujung sedikit terangkat.
+const PEEL_FLAPS = [
+  { turn: 0.03, reach: 0.54, bend: 0.09, tip: 0.07 },
+  { turn: 0.7, reach: 0.47, bend: -0.11, tip: 0.04 },
+  { turn: 1.33, reach: 0.5, bend: 0.07, tip: 0.06 },
+].map(({ turn, reach, bend, tip }) => {
   const angle = turn * Math.PI;
-  const reach = index % 2 === 0 ? 1 : 0.9;
-  const dirX = Math.cos(angle);
-  const dirZ = Math.sin(angle);
-  const at = (radius: number, y: number) => new Vector3(dirX * radius * reach, y, dirZ * radius * reach);
+  const direction = new Vector3(Math.cos(angle), 0, Math.sin(angle));
+  const sideways = new Vector3(-direction.z, 0, direction.x);
+  const at = (progress: number, height: number) => direction
+    .clone()
+    .multiplyScalar(reach * progress)
+    .addScaledVector(sideways, Math.sin(progress * Math.PI) * bend)
+    .setY(height);
 
   return new CatmullRomCurve3([
-    at(0.02, 0.29),
-    at(0.13, 0.2),
-    at(0.25, 0.05),
-    at(0.33, -0.17),
-    at(0.37, -0.37),
+    at(0.05, 0.11),
+    at(0.32, 0.03),
+    at(0.6, -0.04),
+    at(0.84, -0.07),
+    at(1, -0.07 + tip),
   ]);
 });
 
 // Lebar meruncing sampai hampir nol supaya ujungnya lancip. Potongan lurus
 // membuat ujung pelepah tampak terpotong tumpul seperti sepatu.
-const PEEL_WIDTH = (progress: number) => (0.3 * (1 - (progress ** 2.4))) + 0.012;
+const PEEL_WIDTH = (progress: number) => (0.27 * (1 - (progress ** 2.2))) + 0.014;
 
-const PEEL_SURFACES = PEEL_STRIPS.map((curve) => ({
+const PEEL_SURFACES = PEEL_FLAPS.map((curve) => ({
   outer: sweptRibbonGeometry({
     curve,
     width: PEEL_WIDTH,
-    arcSpan: Math.PI * 0.5,
+    arcSpan: Math.PI * 0.55,
     curl: -1,
     offset: PEEL_THICKNESS,
   }),
   inner: sweptRibbonGeometry({
     curve,
     width: PEEL_WIDTH,
-    arcSpan: Math.PI * 0.5,
+    arcSpan: Math.PI * 0.55,
     curl: -1,
     offset: -PEEL_THICKNESS,
   }),
@@ -222,13 +231,13 @@ const DIAPER_WRAP = new TubeGeometry(
 export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "peel") {
     return (
-      <group dispose={null} rotation={[0.08, 0.26, -0.05]}>
-        <mesh position={[0, 0.31, 0]} scale={[1, 0.8, 1]}>
-          <sphereGeometry args={[0.1, 16, 12]} />
+      <group dispose={null} position={[0, -0.3, 0]} rotation={[0.03, 0.32, 0.02]} scale={1.16}>
+        <mesh position={[0, 0.1, 0]} scale={[1, 0.62, 1]}>
+          <sphereGeometry args={[0.11, 16, 12]} />
           <meshStandardMaterial color="#e9c53f" roughness={0.74} />
         </mesh>
-        <mesh position={[0, 0.44, 0.01]} rotation={[0.14, 0, 0.12]}>
-          <cylinderGeometry args={[0.03, 0.055, 0.15, 10]} />
+        <mesh position={[0.02, 0.2, 0.01]} rotation={[0.2, 0, -0.34]}>
+          <cylinderGeometry args={[0.026, 0.05, 0.17, 10]} />
           <meshStandardMaterial color="#6d5024" roughness={0.94} />
         </mesh>
         {PEEL_SURFACES.map((surfaces, index) => (
