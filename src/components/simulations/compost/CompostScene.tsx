@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { useFrame, useThree } from "@react-three/fiber";
 import { DoubleSide, type Group, type Mesh, Vector3 } from "three";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
-import { CompostGarden } from "./CompostGarden";
+import { GardenBackdrop } from "../shared/GardenBackdrop";
 import { CompostMaterialMesh } from "./CompostMaterialMesh";
 import type { CompostMaterial, CompostState } from "./evaluateCompost";
 
@@ -562,7 +562,7 @@ export function CompostScene({ state, reduceMotion, waterActive, onMixComplete }
       <directionalLight color="#fff1c9" intensity={2.15} position={[4, 7, 5]} />
       <directionalLight color="#b4d9cd" intensity={0.68} position={[-4, 2, -3]} />
 
-      <CompostGarden />
+      <GardenBackdrop />
 
       <group position={[0, -0.02, 0]}>
         <mesh position={[0, -1.35, 0]}>

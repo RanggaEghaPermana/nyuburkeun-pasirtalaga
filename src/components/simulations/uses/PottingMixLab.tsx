@@ -5,7 +5,9 @@ import { useWebGLSupport } from "../shared/useWebGLSupport";
 import { useReducedMotion } from "../shared/useReducedMotion";
 import { PottingMixScene } from "./PottingMixScene";
 import {
+  MIX_BLOOM_DAYS,
   MIX_CAPACITY,
+  MIX_DAY_STEP,
   createInitialMixState,
   evaluatePottingMix,
   type MixMaterial,
@@ -17,6 +19,7 @@ type MixAction =
   | { type: "add"; material: MixMaterial }
   | { type: "remove"; material: MixMaterial }
   | { type: "water"; watering: Watering }
+  | { type: "grow" }
   | { type: "reset" };
 
 const MATERIALS: { material: MixMaterial; label: string; hint: string }[] = [
@@ -26,8 +29,8 @@ const MATERIALS: { material: MixMaterial; label: string; hint: string }[] = [
 ];
 
 const CAMERA = {
-  position: [2.7, 2.1, 4.6] as [number, number, number],
-  fov: 38,
+  position: [3.5, 2.9, 6.2] as [number, number, number],
+  fov: 36,
 };
 
 const POUR_DURATION_MS = 1500;
@@ -68,6 +71,13 @@ function mixReducer(state: MixState, action: MixAction): MixState {
     }
     case "water":
       return { ...state, watering: action.watering, actionId: state.actionId + 1 };
+    case "grow":
+      if (state.days >= MIX_BLOOM_DAYS) return state;
+      return {
+        ...state,
+        days: Math.min(state.days + MIX_DAY_STEP, MIX_BLOOM_DAYS),
+        actionId: state.actionId + 1,
+      };
     case "reset":
       return createInitialMixState();
   }
@@ -117,6 +127,8 @@ export function PottingMixLab() {
       )}
       scene={(
         <PottingMixScene
+          bloomed={evaluation.bloomed}
+          growth={evaluation.growth}
           plantHealth={evaluation.plantHealth}
           pouring={pouring}
           reduceMotion={reduceMotion}
@@ -153,6 +165,10 @@ export function PottingMixLab() {
               {
                 label: "Siram air biasa atau eco enzyme yang sudah diencerkan",
                 done: state.watering === "plain" || state.watering === "eco-diluted",
+              },
+              {
+                label: `Lewati hari sampai bunganya mekar di hari ke-${MIX_BLOOM_DAYS}`,
+                done: evaluation.bloomed,
               },
             ]}
             title="Resep Media Tanam"
@@ -219,6 +235,17 @@ export function PottingMixLab() {
             </button>
           </div>
 
+          <div className="sim-lab__controls" role="group" aria-label="Pertumbuhan tanaman">
+            <button
+              className="sim-lab__control sim-lab__control--mix"
+              type="button"
+              disabled={!evaluation.canGrow}
+              onClick={() => dispatch({ type: "grow" })}
+            >
+              {evaluation.bloomed ? "Bunganya sudah mekar" : `Lewati ${MIX_DAY_STEP} hari`}
+            </button>
+          </div>
+
           <div
             className={`sim-lab__status sim-lab__status--${evaluation.tone}`}
             role="status"
@@ -261,6 +288,15 @@ export function PottingMixLab() {
             <div>
               <dt>Penyiraman</dt>
               <dd>{evaluation.wateringLabel}</dd>
+            </div>
+            <div>
+              <dt>Pertumbuhan</dt>
+              <dd>
+                <meter min={0} max={100} low={40} high={90} optimum={100} value={evaluation.growth}>
+                  {evaluation.growth}%
+                </meter>
+                <span>{evaluation.growthLabel}</span>
+              </dd>
             </div>
             <div className="sim-lab__metric--readiness">
               <dt>Kondisi tanaman</dt>

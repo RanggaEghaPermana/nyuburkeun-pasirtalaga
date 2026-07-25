@@ -24,8 +24,8 @@ type EcoLabAction =
   | { type: "reset" };
 
 const CAMERA = {
-  position: [3.1, 2.4, 5.3] as [number, number, number],
-  fov: 38,
+  position: [4.0, 3.1, 7.0] as [number, number, number],
+  fov: 36,
 };
 
 const INGREDIENTS: { kind: EcoIngredient; label: string; target: number }[] = [

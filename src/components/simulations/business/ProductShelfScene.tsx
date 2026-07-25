@@ -1,4 +1,8 @@
-import { DoubleSide } from "three";
+import { useMemo } from "react";
+import { useThree } from "@react-three/fiber";
+import { DoubleSide, SRGBColorSpace, TextureLoader } from "three";
+import { assets } from "../../../lib/assets";
+import { GardenBackdrop } from "../shared/GardenBackdrop";
 import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
@@ -45,6 +49,23 @@ const JAR_BODY = smoothLatheGeometry([
 const INFO_TAG = roundedPlateGeometry(0.3, 0.22, 0.014, 0.02);
 
 const BODY_RADIUS: Record<Container, number> = { pouch: 0, bottle: 0.3, jar: 0.375 };
+
+// Label memakai desain resmi yang sudah dipakai di galeri branding, bukan kotak
+// putih kosong: pouch membawa label kompos, botol dan toples membawa label eco
+// enzyme.
+const LABEL_ART: Record<Container, string> = {
+  pouch: assets.business.labelCompost,
+  bottle: assets.business.labelEcoEnzyme,
+  jar: assets.business.labelEcoEnzyme,
+};
+
+// Isi kemasan dibuat opaque karena three hanya menyalin objek opaque ke buffer
+// transmisi; isi transparan tidak akan terlihat di balik kaca.
+const FILL_COLOR: Record<Container, string> = {
+  pouch: "#4a3b28",
+  bottle: "#a8631f",
+  jar: "#9c5f22",
+};
 
 type ProductShelfSceneProps = {
   state: ProductState;
@@ -99,6 +120,15 @@ function ContainerMesh({ container }: { container: Container }) {
 
 export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
   const radius = BODY_RADIUS[state.container];
+  const invalidate = useThree((threeState) => threeState.invalidate);
+
+  // Tekstur dimuat imperatif lalu meminta satu gambar ulang setelah selesai,
+  // karena kanvas berjalan dengan frameloop "demand".
+  const labelTexture = useMemo(() => {
+    const texture = new TextureLoader().load(LABEL_ART[state.container], () => invalidate());
+    texture.colorSpace = SRGBColorSpace;
+    return texture;
+  }, [invalidate, state.container]);
 
   return (
     <>
@@ -106,8 +136,11 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
       <directionalLight position={[3.8, 6.8, 5]} intensity={2.1} color="#fff2cf" />
       <directionalLight position={[-4.2, 3, -3]} intensity={0.7} color="#b6dcc6" />
 
-      <OrbitCameraControls target={[0, 0.08, 0]} minDistance={2.6} maxDistance={7} />
-      <StageDressing groundY={-0.69} scale={4} />
+      <OrbitCameraControls target={[0, 0.05, 0]} minDistance={3.8} maxDistance={8.5} />
+      <group position={[0, 0.33, 0]} scale={0.8}>
+        <GardenBackdrop />
+      </group>
+      <StageDressing groundY={-0.88} scale={4} />
 
       <mesh position={[0, -0.78, 0]}>
         <cylinderGeometry args={[1.45, 1.6, 0.18, 40]} />
@@ -120,25 +153,44 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
 
       <ContainerMesh container={state.container} />
 
-      {state.hasLabel ? (
-        state.container === "pouch" ? (
-          <mesh position={[0, 0.14, 0.17]}>
-            <planeGeometry args={[0.42, 0.4]} />
-            <meshStandardMaterial color="#fdf8ec" roughness={0.9} />
+      {/* Isi kemasan supaya produknya tidak terlihat kosong. */}
+      {state.container === "bottle" ? (
+        <mesh position={[0, -0.16, 0]}>
+          <cylinderGeometry args={[0.284, 0.275, 0.72, 26]} />
+          <meshStandardMaterial color={FILL_COLOR.bottle} metalness={0.1} roughness={0.28} />
+        </mesh>
+      ) : null}
+
+      {state.container === "jar" ? (
+        <>
+          <mesh position={[0, -0.12, 0]}>
+            <cylinderGeometry args={[0.356, 0.34, 0.72, 28]} />
+            <meshStandardMaterial color={FILL_COLOR.jar} metalness={0.08} roughness={0.3} />
           </mesh>
-        ) : (
-          <mesh position={[0, 0.02, 0]}>
-            <cylinderGeometry args={[radius + 0.008, radius + 0.004, 0.34, 28, 1, true, -0.85, 1.7]} />
-            <meshStandardMaterial color="#fdf8ec" roughness={0.9} side={DoubleSide} />
+          <mesh position={[0, 0.245, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.354, 28]} />
+            <meshStandardMaterial color="#b57a33" metalness={0.24} roughness={0.12} />
           </mesh>
-        )
+        </>
       ) : null}
 
       {state.hasLabel ? (
-        <mesh position={[0, 0.1, state.container === "pouch" ? 0.176 : radius + 0.014]}>
-          <planeGeometry args={[0.2, 0.05]} />
-          <meshStandardMaterial color="#2f7d43" roughness={0.82} />
-        </mesh>
+        state.container === "pouch" ? (
+          <mesh position={[0, 0.12, 0.185]}>
+            <planeGeometry args={[0.4, 0.56]} />
+            <meshStandardMaterial map={labelTexture} roughness={0.86} toneMapped={false} />
+          </mesh>
+        ) : (
+          <mesh position={[0, 0.02, 0]}>
+            <cylinderGeometry args={[radius + 0.01, radius + 0.006, 0.62, 30, 1, true, -0.78, 1.56]} />
+            <meshStandardMaterial
+              map={labelTexture}
+              roughness={0.86}
+              side={DoubleSide}
+              toneMapped={false}
+            />
+          </mesh>
+        )
       ) : null}
 
       {state.hasInfo ? (

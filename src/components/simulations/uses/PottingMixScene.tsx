@@ -1,6 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { CatmullRomCurve3, Color, DoubleSide, TubeGeometry, Vector3, type Group } from "three";
+import { GardenBackdrop } from "../shared/GardenBackdrop";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
 import { dryLeafGeometry, smoothLatheGeometry, type LeafShape } from "../shared/geometry";
@@ -145,11 +146,20 @@ function Droplets({ active, color }: { active: boolean; color: string }) {
 type PottingMixSceneProps = {
   state: MixState;
   plantHealth: number;
+  growth: number;
+  bloomed: boolean;
   pouring: boolean;
   reduceMotion: boolean;
 };
 
-export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: PottingMixSceneProps) {
+export function PottingMixScene({
+  state,
+  plantHealth,
+  growth,
+  bloomed,
+  pouring,
+  reduceMotion,
+}: PottingMixSceneProps) {
   const total = state.layers.length;
   const fillTop = INTERIOR_BOTTOM + (total * LAYER_HEIGHT);
   const health = Math.max(0, Math.min(100, plantHealth)) / 100;
@@ -189,10 +199,15 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
     return SPECKLES.map((speckle, index) => ({ ...speckle, material: order[index] }));
   }, [state.compost, state.sand, state.soil, total]);
 
-  const plantScale = 0.85 + (health * 0.5);
-  const droop = (1 - health) * 0.8;
   const look = WATERING_LOOK[state.watering];
-  const thriving = health >= 0.82 && total >= 9;
+
+  // Bibit tumbuh bertahap mengikuti hari yang dilewati: makin tinggi, makin
+  // banyak daun yang terbuka, lalu berkuncup dan mekar di akhir.
+  const stage = Math.min(Math.max(growth, 0), 100) / 100;
+  const plantScale = (0.46 + (stage * 0.62)) * (0.72 + (health * 0.38));
+  const droop = (1 - health) * 0.8;
+  const openLeaves = Math.max(2, Math.round(2 + (stage * (LEAF_PLACEMENTS.length - 2))));
+  const budding = stage >= 0.45 && health >= 0.7;
 
   return (
     <>
@@ -200,8 +215,13 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
       <directionalLight position={[4, 7.2, 5.2]} intensity={2.2} color="#fff2cf" />
       <directionalLight position={[-4.4, 3, -3.2]} intensity={0.7} color="#b2dbc4" />
 
-      <OrbitCameraControls target={[0, 0.15, 0]} minDistance={3} maxDistance={8} />
-      <StageDressing groundY={-0.7} scale={4.6} />
+      <OrbitCameraControls target={[0, 0.25, 0]} minDistance={4.4} maxDistance={9.5} />
+      {/* Latar kebun yang sama dengan simulasi sampah dan kompos, digeser agar
+          tanahnya jatuh tepat di bawah meja pot. */}
+      <group position={[0, 0.47, 0]} scale={0.9}>
+        <GardenBackdrop />
+      </group>
+      <StageDressing groundY={-0.88} scale={4.6} />
 
       <mesh position={[0, -0.78, 0]}>
         <cylinderGeometry args={[1.7, 1.85, 0.2, 40]} />
@@ -235,27 +255,30 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
           <mesh geometry={STEM}>
             <meshStandardMaterial color="#4e7536" roughness={0.86} />
           </mesh>
-          {/* Hasil akhir yang baik diberi tanda yang terlihat: kuncup bunga
-              muncul saat campuran dan penyiramannya benar. */}
-          {thriving ? (
-            <>
-              <mesh position={[0.02, 0.66, 0]}>
+          {/* Kuncup tertutup dulu, lalu kelopaknya terbuka saat mekar, supaya
+              perubahan tiap lewat hari benar-benar terlihat. */}
+          {budding ? (
+            <group position={[0.02, 0.64, 0]}>
+              <mesh scale={bloomed ? 1 : 0.6}>
                 <sphereGeometry args={[0.055, 12, 10]} />
-                <meshStandardMaterial color="#f0c34a" roughness={0.6} />
+                <meshStandardMaterial color={bloomed ? "#f0c34a" : "#8fae4c"} roughness={0.6} />
               </mesh>
-              {[0.7, 2.8, 4.9].map((angle) => (
-                <mesh
-                  key={angle}
-                  position={[Math.cos(angle) * 0.075, 0.655, Math.sin(angle) * 0.075]}
-                  scale={[1, 0.45, 1]}
-                >
-                  <sphereGeometry args={[0.05, 10, 8]} />
-                  <meshStandardMaterial color="#f6e7a8" roughness={0.68} />
-                </mesh>
-              ))}
-            </>
+              {bloomed
+                ? [0.5, 1.75, 3, 4.25, 5.5].map((angle) => (
+                  <mesh
+                    key={angle}
+                    position={[Math.cos(angle) * 0.082, -0.006, Math.sin(angle) * 0.082]}
+                    rotation={[0, -angle, 0]}
+                    scale={[1.5, 0.36, 0.9]}
+                  >
+                    <sphereGeometry args={[0.05, 10, 8]} />
+                    <meshStandardMaterial color="#f8ecb0" roughness={0.66} />
+                  </mesh>
+                ))
+                : null}
+            </group>
           ) : null}
-          {LEAF_PLACEMENTS.map((placement, index) => (
+          {LEAF_PLACEMENTS.slice(0, openLeaves).map((placement, index) => (
             <group key={index} position={[0, placement.height, 0]} rotation={[0, placement.angle, 0]}>
               <mesh
                 geometry={LEAF_BLADE}

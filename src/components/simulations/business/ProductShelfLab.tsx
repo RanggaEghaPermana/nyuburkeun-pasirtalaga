@@ -22,8 +22,8 @@ type ProductAction =
   | { type: "reset" };
 
 const CAMERA = {
-  position: [2.4, 1.7, 3.9] as [number, number, number],
-  fov: 38,
+  position: [3.2, 2.4, 5.4] as [number, number, number],
+  fov: 36,
 };
 
 const CONTAINER_ORDER: Container[] = ["pouch", "bottle", "jar"];

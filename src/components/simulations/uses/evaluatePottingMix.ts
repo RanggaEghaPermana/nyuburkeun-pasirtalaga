@@ -7,11 +7,14 @@ export type MixState = {
   sand: number;
   layers: { id: number; material: MixMaterial }[];
   watering: Watering;
+  days: number;
   actionId: number;
 };
 
 export const MIX_CAPACITY = 12;
 export const MIX_MIN_FILL = 9;
+export const MIX_DAY_STEP = 7;
+export const MIX_BLOOM_DAYS = 28;
 
 export const MIX_TARGET = {
   compost: { min: 18, max: 34 },
@@ -20,7 +23,7 @@ export const MIX_TARGET = {
 };
 
 export function createInitialMixState(): MixState {
-  return { soil: 0, compost: 0, sand: 0, layers: [], watering: "none", actionId: 0 };
+  return { soil: 0, compost: 0, sand: 0, layers: [], watering: "none", days: 0, actionId: 0 };
 }
 
 export type MixEvaluation = {
@@ -38,6 +41,10 @@ export type MixEvaluation = {
   wateringLabel: string;
   plantHealth: number;
   isReady: boolean;
+  growth: number;
+  growthLabel: string;
+  canGrow: boolean;
+  bloomed: boolean;
 };
 
 function share(part: number, total: number) {
@@ -99,6 +106,18 @@ export function evaluatePottingMix(state: MixState): MixEvaluation {
         ? "Terlalu berpasir, air cepat habis"
         : "Air mengalir dengan baik";
 
+  const growth = Math.round((Math.min(state.days, MIX_BLOOM_DAYS) / MIX_BLOOM_DAYS) * 100);
+  const canGrow = isReady && state.days < MIX_BLOOM_DAYS;
+  const bloomed = isReady && state.days >= MIX_BLOOM_DAYS;
+
+  const growthLabel = state.watering === "none"
+    ? "Belum disiram"
+    : !isReady
+      ? "Tanaman belum bisa tumbuh baik"
+      : bloomed
+        ? "Bunganya sudah mekar"
+        : `Hari ke-${state.days} dari ${MIX_BLOOM_DAYS}`;
+
   const base = {
     total,
     compostShare,
@@ -110,6 +129,10 @@ export function evaluatePottingMix(state: MixState): MixEvaluation {
     wateringLabel: WATERING_LABEL[state.watering],
     plantHealth,
     isReady,
+    growth,
+    growthLabel,
+    canGrow,
+    bloomed,
   };
 
   if (total === 0) {
@@ -190,11 +213,21 @@ export function evaluatePottingMix(state: MixState): MixEvaluation {
     };
   }
 
+  if (bloomed) {
+    return {
+      ...base,
+      tone: "success",
+      title: "Bunganya mekar",
+      message: `Setelah ${MIX_BLOOM_DAYS} hari di media tanam yang seimbang, bibitmu tumbuh sehat sampai berbunga.`,
+      nextAction: "Tambahkan kompos lagi sedikit saja beberapa bulan kemudian, jangan sekaligus banyak.",
+    };
+  }
+
   return {
     ...base,
     tone: "success",
     title: "Media tanamnya siap dipakai",
     message: "Kompos bercampur rata dengan tanah, air mengalir dengan baik, dan penyiramannya aman untuk tanaman.",
-    nextAction: "Tanam bibitmu, lalu tambahkan kompos lagi sedikit saja beberapa bulan kemudian.",
+    nextAction: `Lewati hari untuk melihat bibitmu tumbuh sampai berbunga pada hari ke-${MIX_BLOOM_DAYS}.`,
   };
 }

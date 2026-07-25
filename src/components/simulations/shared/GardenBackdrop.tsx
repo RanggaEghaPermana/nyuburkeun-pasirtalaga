@@ -53,7 +53,7 @@ function GrassTuft({ position, rotation = 0 }: { position: [number, number, numb
   );
 }
 
-export const CompostGarden = memo(function CompostGarden() {
+export const GardenBackdrop = memo(function GardenBackdrop() {
   return (
     <group>
       <mesh position={[0, -1.54, 0]} rotation={[-Math.PI / 2, 0, 0]}>
