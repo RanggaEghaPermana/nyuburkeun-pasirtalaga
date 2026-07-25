@@ -262,7 +262,7 @@ main {
 /* Typography and section rhythm. */
 .section-title__eyebrow,
 .section-kicker,
-.compost-lab__eyebrow {
+.sim-lab__eyebrow {
   margin-bottom: 9px;
   color: var(--brand);
   font-size: 12px;
@@ -1974,8 +1974,8 @@ main {
 }
 
 .simulation-canvas canvas,
-.compost-lab__canvas,
-.compost-lab__canvas canvas {
+.sim-lab__canvas,
+.sim-lab__canvas canvas {
   width: 100% !important;
   height: 100% !important;
 }
@@ -2096,7 +2096,7 @@ main {
 }
 
 /* Compost balance lab. */
-.compost-lab {
+.sim-lab {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 32px;
@@ -2107,13 +2107,13 @@ main {
   box-shadow: 0 26px 68px rgb(22 52 41 / 14%);
 }
 
-.compost-lab__header {
+.sim-lab__header {
   max-width: 760px;
   margin: 0 auto 28px;
   text-align: center;
 }
 
-.compost-lab__header h2 {
+.sim-lab__header h2 {
   margin-bottom: 10px;
   font-size: clamp(28px, 2.7vw, 38px);
   font-weight: 620;
@@ -2121,20 +2121,20 @@ main {
   line-height: 1.1;
 }
 
-.compost-lab__header > p:last-child {
+.sim-lab__header > p:last-child {
   margin-bottom: 0;
   color: var(--muted);
   font-size: 15px;
 }
 
-.compost-lab__layout {
+.sim-lab__layout {
   display: grid;
   grid-template-columns: minmax(420px, 1.05fr) minmax(360px, .95fr);
   align-items: stretch;
   gap: 22px;
 }
 
-.compost-lab__visual {
+.sim-lab__visual {
   position: relative;
   height: auto;
   min-height: 430px;
@@ -2144,18 +2144,18 @@ main {
   background: linear-gradient(145deg, #f4f1e7, #dce9dd);
 }
 
-.compost-lab__canvas {
+.sim-lab__canvas {
   position: absolute;
   inset: 0;
 }
 
-.compost-lab__canvas canvas {
+.sim-lab__canvas canvas {
   /* OrbitControls writes `touch-action: none` inline. Keep vertical page
      scrolling available on phones while horizontal drags still rotate. */
   touch-action: pan-y !important;
 }
 
-.compost-stage-hud {
+.sim-stage-hud {
   position: absolute;
   z-index: 3;
   top: 12px;
@@ -2172,7 +2172,7 @@ main {
   backdrop-filter: blur(8px);
 }
 
-.compost-stage-hud span {
+.sim-stage-hud span {
   color: var(--muted);
   font-size: 9px;
   font-weight: 760;
@@ -2181,18 +2181,18 @@ main {
   text-transform: uppercase;
 }
 
-.compost-stage-hud strong {
+.sim-stage-hud strong {
   margin-top: 2px;
   color: var(--brand-deep);
   font-size: 13px;
   line-height: 1.25;
 }
 
-.compost-stage-scroll-hint {
+.sim-stage-scroll-hint {
   display: none;
 }
 
-.compost-lab__panel {
+.sim-lab__panel {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -2202,24 +2202,24 @@ main {
   color: var(--white);
 }
 
-.compost-lab__status {
+.sim-lab__status {
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 18px;
   padding: 17px;
   background: rgb(255 255 255 / 8%);
 }
 
-.compost-lab__status--success {
+.sim-lab__status--success {
   border-color: rgb(215 240 138 / 42%);
   background: rgb(215 240 138 / 11%);
 }
 
-.compost-lab__status--attention {
+.sim-lab__status--attention {
   border-color: rgb(243 198 101 / 45%);
   background: rgb(243 198 101 / 10%);
 }
 
-.compost-lab__status-label {
+.sim-lab__status-label {
   margin-bottom: 5px;
   color: var(--accent);
   font-size: 11px;
@@ -2228,24 +2228,24 @@ main {
   text-transform: uppercase;
 }
 
-.compost-lab__status h3 {
+.sim-lab__status h3 {
   margin-bottom: 6px;
   font-size: 20px;
 }
 
-.compost-lab__status p {
+.sim-lab__status p {
   margin-bottom: 7px;
   color: rgb(255 255 255 / 75%);
   font-size: 13px;
   line-height: 1.48;
 }
 
-.compost-lab__next-action {
+.sim-lab__next-action {
   margin-bottom: 0 !important;
   color: var(--white) !important;
 }
 
-.compost-lab__mix-result {
+.sim-lab__mix-result {
   margin-top: 10px;
   border: 1px solid rgb(215 240 138 / 42%);
   border-radius: 17px;
@@ -2253,13 +2253,13 @@ main {
   background: linear-gradient(135deg, rgb(215 240 138 / 14%), rgb(255 255 255 / 6%));
 }
 
-.compost-lab__mix-result-heading {
+.sim-lab__mix-result-heading {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.compost-lab__mix-result-heading > span {
+.sim-lab__mix-result-heading > span {
   display: grid;
   width: 32px;
   height: 32px;
@@ -2271,7 +2271,7 @@ main {
   font-weight: 850;
 }
 
-.compost-lab__mix-result-heading p {
+.sim-lab__mix-result-heading p {
   margin: 0 0 2px;
   color: rgb(255 255 255 / 58%);
   font-size: 9px;
@@ -2280,60 +2280,60 @@ main {
   text-transform: uppercase;
 }
 
-.compost-lab__mix-result-heading strong {
+.sim-lab__mix-result-heading strong {
   color: var(--white);
   font-size: 13px;
 }
 
-.compost-lab__mix-result dl {
+.sim-lab__mix-result dl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
   margin: 11px 0 8px;
 }
 
-.compost-lab__mix-result dl > div {
+.sim-lab__mix-result dl > div {
   border-radius: 11px;
   padding: 8px 10px;
   background: rgb(0 0 0 / 12%);
 }
 
-.compost-lab__mix-result dt {
+.sim-lab__mix-result dt {
   color: rgb(255 255 255 / 55%);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
 }
 
-.compost-lab__mix-result dd {
+.sim-lab__mix-result dd {
   margin: 2px 0 0;
   color: var(--accent);
   font-size: 13px;
   font-weight: 760;
 }
 
-.compost-lab__mix-result > p {
+.sim-lab__mix-result > p {
   margin: 0;
   color: rgb(255 255 255 / 74%);
   font-size: 11px;
   line-height: 1.45;
 }
 
-.compost-lab__metrics {
+.sim-lab__metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin: 12px 0;
 }
 
-.compost-lab__metrics > div {
+.sim-lab__metrics > div {
   min-width: 0;
   border-radius: 14px;
   padding: 11px 12px;
   background: rgb(255 255 255 / 7%);
 }
 
-.compost-lab__metrics dt {
+.sim-lab__metrics dt {
   margin-bottom: 3px;
   color: rgb(255 255 255 / 52%);
   font-size: 10px;
@@ -2342,7 +2342,7 @@ main {
   text-transform: uppercase;
 }
 
-.compost-lab__metrics dd {
+.sim-lab__metrics dd {
   margin: 0;
   color: var(--white);
   font-size: 12px;
@@ -2350,31 +2350,31 @@ main {
   line-height: 1.4;
 }
 
-.compost-lab__metrics meter {
+.sim-lab__metrics meter {
   width: 100%;
   height: 7px;
   margin-bottom: 4px;
   accent-color: var(--accent);
 }
 
-.compost-lab__metrics meter + span {
+.sim-lab__metrics meter + span {
   display: block;
 }
 
-.compost-lab__metric--readiness {
+.sim-lab__metric--readiness {
   grid-column: 1 / -1;
   border: 1px solid rgb(215 240 138 / 18%);
 }
 
-.compost-lab__controls {
+.sim-lab__controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: auto;
 }
 
-.compost-lab__control,
-.compost-lab__reset {
+.sim-lab__control,
+.sim-lab__reset {
   min-height: 44px;
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 13px;
@@ -2387,31 +2387,31 @@ main {
   transition: transform 170ms ease, background 170ms ease, opacity 170ms ease;
 }
 
-.compost-lab__control:hover:not(:disabled),
-.compost-lab__reset:hover:not(:disabled) {
+.sim-lab__control:hover:not(:disabled),
+.sim-lab__reset:hover:not(:disabled) {
   background: rgb(255 255 255 / 15%);
   transform: translateY(-2px);
 }
 
-.compost-lab__control--green span {
+.sim-lab__control--green span {
   color: var(--accent);
 }
 
-.compost-lab__control--brown span {
+.sim-lab__control--brown span {
   color: #e4b67e;
 }
 
-.compost-lab__control--water span {
+.sim-lab__control--water span {
   color: #8edbec;
 }
 
-.compost-lab__control--mix {
+.sim-lab__control--mix {
   border-color: transparent;
   background: var(--accent);
   color: var(--brand-ink);
 }
 
-.compost-lab__reset {
+.sim-lab__reset {
   width: 100%;
   margin-top: 8px;
   border-color: transparent;
@@ -2421,15 +2421,15 @@ main {
   text-underline-offset: 3px;
 }
 
-.compost-lab__control:disabled,
-.compost-lab__reset:disabled {
+.sim-lab__control:disabled,
+.sim-lab__reset:disabled {
   cursor: not-allowed;
   opacity: .56;
 }
 
 :where(
-  .compost-lab__control,
-  .compost-lab__reset,
+  .sim-lab__control,
+  .sim-lab__reset,
   .simulation-next,
   .simulation-primary,
   .sorting-accessible-controls button,
@@ -2439,7 +2439,7 @@ main {
   outline-offset: 2px;
 }
 
-.compost-lab__disclaimer {
+.sim-lab__disclaimer {
   max-width: 800px;
   margin: 18px auto 0;
   color: var(--muted);
@@ -2448,7 +2448,7 @@ main {
   text-align: center;
 }
 
-.compost-lab__fallback {
+.sim-lab__fallback {
   display: grid;
   height: 100%;
   place-content: center;
@@ -2458,7 +2458,7 @@ main {
   text-align: center;
 }
 
-.compost-lab__fallback-bin {
+.sim-lab__fallback-bin {
   display: flex;
   width: 160px;
   height: 190px;
@@ -2471,13 +2471,97 @@ main {
   padding: 10px;
 }
 
-.compost-lab__fallback-layer {
+.sim-lab__fallback-layer {
   height: 12px;
   border-radius: 99px;
 }
 
-.compost-lab__fallback-layer--green { background: #65923f; }
-.compost-lab__fallback-layer--brown { background: #8b5a32; }
+.sim-lab__fallback-layer--green { background: #65923f; }
+.sim-lab__fallback-layer--brown { background: #8b5a32; }
+.sim-lab__fallback-layer--soil { background: #6d4c30; }
+.sim-lab__fallback-layer--compost { background: #3b2a1b; }
+.sim-lab__fallback-layer--sand { background: #cdba95; }
+
+.sim-lab__webgl-fallback {
+  display: grid;
+  height: 100%;
+  place-content: center;
+  padding: 24px;
+  color: rgb(255 255 255 / 76%);
+  font-size: 14px;
+  text-align: center;
+}
+
+.sim-lab__fallback-bars {
+  display: grid;
+  width: 200px;
+  gap: 10px;
+}
+
+.sim-lab__fallback-bars span {
+  height: 16px;
+  min-width: 6px;
+  border-radius: 99px;
+  background: var(--brand);
+}
+
+.sim-lab__fallback-bars span[data-kind="sugar"] { background: #e6c766; }
+.sim-lab__fallback-bars span[data-kind="scraps"] { background: #7fa646; }
+.sim-lab__fallback-bars span[data-kind="water"] { background: #6fb6cf; }
+
+.sim-lab__fallback-product {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.sim-lab__fallback-product strong {
+  font-size: 17px;
+}
+
+.sim-lab__control--sugar span {
+  color: #f0d27a;
+}
+
+.sim-lab__control--warn {
+  border-color: rgb(230 122 96 / 55%);
+}
+
+.sim-lab__control--warn span {
+  color: #f19a80;
+}
+
+/* Penggeser harga pada laboratorium kemasan. */
+.sim-lab__slider {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: rgb(255 255 255 / 6%);
+}
+
+.sim-lab__slider label {
+  font-size: 14px;
+  font-weight: 620;
+}
+
+.sim-lab__slider label strong {
+  color: var(--accent);
+}
+
+.sim-lab__slider input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.sim-lab__slider p {
+  margin: 0;
+  color: rgb(255 255 255 / 72%);
+  font-size: 13px;
+  line-height: 1.5;
+}
 
 @keyframes simulation-spin {
   to { transform: rotate(1turn); }
@@ -2501,7 +2585,7 @@ main {
   }
 
   .simulation-shell,
-  .compost-lab__layout {
+  .sim-lab__layout {
     grid-template-columns: 1fr;
   }
 
@@ -2514,11 +2598,11 @@ main {
     max-width: 720px;
   }
 
-  .compost-lab__visual {
+  .sim-lab__visual {
     min-height: 410px;
   }
 
-  .compost-lab__panel {
+  .sim-lab__panel {
     min-height: 390px;
   }
 }
@@ -2799,7 +2883,7 @@ main {
 
   .section-title__eyebrow,
   .section-kicker,
-  .compost-lab__eyebrow {
+  .sim-lab__eyebrow {
     font-size: 10px;
   }
 
@@ -3531,40 +3615,40 @@ main {
     grid-template-columns: 1fr 1fr;
   }
 
-  .compost-lab {
+  .sim-lab {
     border-radius: 24px;
     padding: 14px;
   }
 
-  .compost-lab__header {
+  .sim-lab__header {
     margin-bottom: 20px;
     padding: 12px 8px 0;
     text-align: left;
   }
 
-  .compost-lab__header h2 {
+  .sim-lab__header h2 {
     font-size: 27px;
   }
 
-  .compost-lab__header > p:last-child {
+  .sim-lab__header > p:last-child {
     font-size: 14px;
   }
 
-  .compost-lab__layout {
+  .sim-lab__layout {
     gap: 12px;
   }
 
-  .compost-lab__visual {
+  .sim-lab__visual {
     height: clamp(290px, 82vw, 330px);
     min-height: 0;
     border-radius: 18px;
   }
 
-  .compost-stage-hud {
+  .sim-stage-hud {
     max-width: calc(100% - 64px);
   }
 
-  .compost-stage-scroll-hint {
+  .sim-stage-scroll-hint {
     position: absolute;
     z-index: 4;
     top: 8px;
@@ -3588,26 +3672,26 @@ main {
     writing-mode: vertical-rl;
   }
 
-  .compost-lab__panel {
+  .sim-lab__panel {
     min-height: 0;
     border-radius: 19px;
     padding: 14px;
   }
 
-  .compost-lab__metrics {
+  .sim-lab__metrics {
     grid-template-columns: 1fr 1fr;
   }
 
-  .compost-lab__controls {
+  .sim-lab__controls {
     margin-top: 4px;
   }
 
-  .compost-lab__control,
-  .compost-lab__reset {
+  .sim-lab__control,
+  .sim-lab__reset {
     min-height: 46px;
   }
 
-  .compost-lab__disclaimer {
+  .sim-lab__disclaimer {
     padding-inline: 8px;
     text-align: left;
   }
@@ -3676,8 +3760,8 @@ main {
     grid-template-columns: 1fr;
   }
 
-  .compost-lab__controls,
-  .compost-lab__metrics {
+  .sim-lab__controls,
+  .sim-lab__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

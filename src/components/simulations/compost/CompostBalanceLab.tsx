@@ -234,9 +234,9 @@ export function CompostBalanceLab() {
   };
 
   return (
-    <section className="compost-lab" aria-labelledby={titleId}>
-      <header className="compost-lab__header">
-        <p className="compost-lab__eyebrow">Permainan kompos 3D</p>
+    <section className="sim-lab" aria-labelledby={titleId}>
+      <header className="sim-lab__header">
+        <p className="sim-lab__eyebrow">Permainan kompos 3D</p>
         <h2 id={titleId}>Ayo Isi Ember Kompos</h2>
         <p id={instructionId}>
           Pilih bahan satu per satu, tambahkan air seperlunya, lalu aduk. Setiap bahan yang kamu pilih benar-benar masuk ke dalam komposter.
@@ -244,17 +244,17 @@ export function CompostBalanceLab() {
         <p>Seret mendatar area gambar yang kosong untuk memutar kebun 360°. Coba target awal sekitar dua bagian bahan cokelat untuk satu bagian bahan hijau, lalu jaga kelembapannya seperti spons yang sudah diperas.</p>
       </header>
 
-      <div className="compost-lab__layout">
-        <div className="compost-lab__visual">
+      <div className="sim-lab__layout">
+        <div className="sim-lab__visual">
           {webGLAvailable ? (
-            <div className="compost-lab__canvas" aria-hidden="true">
+            <div className="sim-lab__canvas" aria-hidden="true">
               <SimulationErrorBoundary
-                fallback={<div className="compost-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
+                fallback={<div className="sim-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
               >
                 <Canvas
                   camera={CAMERA}
                   dpr={DPR}
-                  fallback={<div className="compost-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
+                  fallback={<div className="sim-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
                   frameloop="demand"
                   gl={GL_OPTIONS}
                 >
@@ -269,14 +269,14 @@ export function CompostBalanceLab() {
             </div>
           ) : (
             <div
-              className="compost-lab__fallback"
+              className="sim-lab__fallback"
               role="img"
               aria-label={`Ilustrasi komposter: ${state.greens} bagian bahan hijau, ${state.browns} bagian bahan cokelat, kelembapan ${state.moisture} persen, sirkulasi udara ${state.aeration} persen.`}
             >
-              <div className="compost-lab__fallback-bin">
+              <div className="sim-lab__fallback-bin">
                 {fallbackLayers.map((layer) => (
                   <span
-                    className={`compost-lab__fallback-layer compost-lab__fallback-layer--${layer.kind}`}
+                    className={`sim-lab__fallback-layer sim-lab__fallback-layer--${layer.kind}`}
                     key={layer.id}
                   />
                 ))}
@@ -284,23 +284,23 @@ export function CompostBalanceLab() {
               <p>Mode visual sederhana aktif karena WebGL tidak tersedia.</p>
             </div>
           )}
-          <div className="compost-stage-hud" aria-hidden="true">
+          <div className="sim-stage-hud" aria-hidden="true">
             <span>Putar kebun 360°</span>
             <strong>{visualStateLabel}</strong>
           </div>
-          <div className="compost-stage-scroll-hint" aria-hidden="true">Geser halaman</div>
+          <div className="sim-stage-scroll-hint" aria-hidden="true">Geser halaman</div>
         </div>
 
-        <div className="compost-lab__panel">
+        <div className="sim-lab__panel">
           <div
-            className="compost-lab__controls"
+            className="sim-lab__controls"
             role="group"
             aria-busy={controlsBusy}
             aria-describedby={instructionId}
             aria-label="Kontrol komposter"
           >
             <button
-              className="compost-lab__control compost-lab__control--green"
+              className="sim-lab__control sim-lab__control--green"
               type="button"
               disabled={controlsBusy || state.greens >= 12}
               onClick={() => dispatch({ type: "add-material", material: "vegetable-scraps" })}
@@ -308,7 +308,7 @@ export function CompostBalanceLab() {
               <span aria-hidden="true">＋</span> Sisa sayur
             </button>
             <button
-              className="compost-lab__control compost-lab__control--green"
+              className="sim-lab__control sim-lab__control--green"
               type="button"
               disabled={controlsBusy || state.greens >= 12}
               onClick={() => dispatch({ type: "add-material", material: "fruit-peels" })}
@@ -316,7 +316,7 @@ export function CompostBalanceLab() {
               <span aria-hidden="true">＋</span> Kulit buah
             </button>
             <button
-              className="compost-lab__control compost-lab__control--brown"
+              className="sim-lab__control sim-lab__control--brown"
               type="button"
               disabled={controlsBusy || state.browns >= 12}
               onClick={() => dispatch({ type: "add-material", material: "dry-leaves" })}
@@ -324,7 +324,7 @@ export function CompostBalanceLab() {
               <span aria-hidden="true">＋</span> Daun kering
             </button>
             <button
-              className="compost-lab__control compost-lab__control--brown"
+              className="sim-lab__control sim-lab__control--brown"
               type="button"
               disabled={controlsBusy || state.browns >= 12}
               onClick={() => dispatch({ type: "add-material", material: "torn-cardboard" })}
@@ -332,7 +332,7 @@ export function CompostBalanceLab() {
               <span aria-hidden="true">＋</span> Kardus sobek
             </button>
             <button
-              className="compost-lab__control compost-lab__control--water"
+              className="sim-lab__control sim-lab__control--water"
               type="button"
               disabled={controlsBusy || state.batches.length === 0 || state.moisture >= 90}
               onClick={startWatering}
@@ -340,7 +340,7 @@ export function CompostBalanceLab() {
               <span aria-hidden="true">＋</span> {isWatering ? "Sedang menyiram…" : "Siram sedikit"}
             </button>
             <button
-              className="compost-lab__control compost-lab__control--mix"
+              className="sim-lab__control sim-lab__control--mix"
               type="button"
               disabled={controlsBusy || state.batches.length === 0}
               onClick={startMixing}
@@ -350,20 +350,20 @@ export function CompostBalanceLab() {
           </div>
 
           <div
-            className={`compost-lab__status compost-lab__status--${displayedEvaluation.tone}`}
+            className={`sim-lab__status sim-lab__status--${displayedEvaluation.tone}`}
             role="status"
             aria-live="polite"
             aria-atomic="true"
           >
-            <p className="compost-lab__status-label">Kondisi campuranmu</p>
+            <p className="sim-lab__status-label">Kondisi campuranmu</p>
             <h3>{displayedEvaluation.title}</h3>
             <p>{displayedEvaluation.message}</p>
-            <p className="compost-lab__next-action"><strong>Coba lakukan:</strong> {displayedEvaluation.nextAction}</p>
+            <p className="sim-lab__next-action"><strong>Coba lakukan:</strong> {displayedEvaluation.nextAction}</p>
           </div>
 
           {!isMixing && mixReport ? (
-            <div className="compost-lab__mix-result" role="status" aria-live="polite" aria-atomic="true">
-              <div className="compost-lab__mix-result-heading">
+            <div className="sim-lab__mix-result" role="status" aria-live="polite" aria-atomic="true">
+              <div className="sim-lab__mix-result-heading">
                 <span aria-hidden="true">✓</span>
                 <div>
                   <p>Hasil aduk ke-{mixReport.sequence}</p>
@@ -388,7 +388,7 @@ export function CompostBalanceLab() {
             </div>
           ) : null}
 
-          <dl className="compost-lab__metrics">
+          <dl className="sim-lab__metrics">
             <div>
               <dt>Bahan hijau</dt>
               <dd>{state.greens} bagian</dd>
@@ -426,7 +426,7 @@ export function CompostBalanceLab() {
                 <span>{state.aeration}% · {evaluation.aerationLabel}</span>
               </dd>
             </div>
-            <div className="compost-lab__metric--readiness">
+            <div className="sim-lab__metric--readiness">
               <dt>Kesiapan campuran</dt>
               <dd>
                 <meter min={0} max={100} low={45} high={75} optimum={100} value={evaluation.readinessScore}>
@@ -438,7 +438,7 @@ export function CompostBalanceLab() {
           </dl>
 
           <button
-            className="compost-lab__reset"
+            className="sim-lab__reset"
             type="button"
             disabled={controlsBusy || !hasChanged(state)}
             onClick={() => dispatch({ type: "reset" })}
@@ -448,7 +448,7 @@ export function CompostBalanceLab() {
         </div>
       </div>
 
-      <p className="compost-lab__disclaimer">
+      <p className="sim-lab__disclaimer">
         Ini adalah permainan untuk belajar. Kompos asli dapat berubah dengan cara yang berbeda, jadi periksa bau, panas, dan kelembapannya bersama orang dewasa.
       </p>
     </section>

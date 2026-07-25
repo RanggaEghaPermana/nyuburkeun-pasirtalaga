@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { DeferredSimulation } from "../components/simulations/shared/DeferredSimulation";
 import { Hero } from "../components/Hero";
 import { InfoTileGrid, VideoList, type VideoLink } from "../components/ContentBlocks";
 import { PageMeta } from "../components/PageMeta";
 import { SectionTitle } from "../components/SectionTitle";
 import { SiteFooter } from "../components/SiteFooter";
 import { assets } from "../lib/assets";
+
+const ProductShelfLab = lazy(() => import("../components/simulations/business/ProductShelfLab").then((module) => ({
+  default: module.ProductShelfLab,
+})));
 
 const targets = [
   {
@@ -329,6 +334,14 @@ export default function BusinessPage() {
             ))}
           </div>
         </section>
+
+        <div className="simulation-section page-section page-container">
+          <DeferredSimulation label="laboratorium kemasan dan harga 3D">
+            <Suspense fallback={<div className="simulation-placeholder" role="status">Memuat laboratorium 3D…</div>}>
+              <ProductShelfLab />
+            </Suspense>
+          </DeferredSimulation>
+        </div>
 
         <section className="selling-section page-section page-container">
           <SectionTitle>Checklist Sebelum Menjual</SectionTitle>

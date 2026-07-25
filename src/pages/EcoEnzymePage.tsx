@@ -1,3 +1,5 @@
+import { lazy, Suspense } from "react";
+import { DeferredSimulation } from "../components/simulations/shared/DeferredSimulation";
 import {
   FeatureGrid,
   InfoTileGrid,
@@ -11,6 +13,10 @@ import { PageMeta } from "../components/PageMeta";
 import { SectionTitle } from "../components/SectionTitle";
 import { SiteFooter } from "../components/SiteFooter";
 import { assets } from "../lib/assets";
+
+const EcoRatioLab = lazy(() => import("../components/simulations/eco/EcoRatioLab").then((module) => ({
+  default: module.EcoRatioLab,
+})));
 
 const benefits = [
   {
@@ -213,6 +219,14 @@ export default function EcoEnzymePage() {
             Gas biasanya lebih banyak terbentuk pada minggu awal. Periksa wadah secara rutin bersama orang dewasa.
           </p>
         </section>
+
+        <div className="simulation-section page-section page-container">
+          <DeferredSimulation label="laboratorium takaran eco enzyme 3D">
+            <Suspense fallback={<div className="simulation-placeholder" role="status">Memuat laboratorium 3D…</div>}>
+              <EcoRatioLab />
+            </Suspense>
+          </DeferredSimulation>
+        </div>
 
         <section className="video-section page-section page-container" aria-labelledby="eco-video-title">
           <div id="eco-video-title">

@@ -17,7 +17,7 @@ import {
   sweptRibbonGeometry,
   warpGeometry,
   type LeafShape,
-} from "./wasteGeometry";
+} from "../shared/geometry";
 
 type WasteObjectProps = {
   shape: WasteShape;

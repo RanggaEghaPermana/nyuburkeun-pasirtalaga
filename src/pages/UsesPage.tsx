@@ -1,9 +1,15 @@
+import { lazy, Suspense } from "react";
 import { Hero } from "../components/Hero";
 import { PageMeta } from "../components/PageMeta";
 import { SafetyNotice, SourceList } from "../components/ContentBlocks";
 import { SectionTitle } from "../components/SectionTitle";
 import { SiteFooter } from "../components/SiteFooter";
+import { DeferredSimulation } from "../components/simulations/shared/DeferredSimulation";
 import { assets } from "../lib/assets";
+
+const PottingMixLab = lazy(() => import("../components/simulations/uses/PottingMixLab").then((module) => ({
+  default: module.PottingMixLab,
+})));
 
 const compostUses = [
   {
@@ -190,6 +196,14 @@ export default function UsesPage() {
             </table>
           </div>
         </section>
+
+        <div className="simulation-section page-section page-container">
+          <DeferredSimulation label="laboratorium media tanam 3D">
+            <Suspense fallback={<div className="simulation-placeholder" role="status">Memuat laboratorium 3D…</div>}>
+              <PottingMixLab />
+            </Suspense>
+          </DeferredSimulation>
+        </div>
 
         <section className="safety-section page-section page-container">
           <SafetyNotice title="Batas aman yang perlu diingat">
