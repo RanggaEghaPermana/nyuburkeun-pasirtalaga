@@ -123,6 +123,28 @@ export function SafetyNotice({ title = "Gunakan dengan aman", children }: { titl
   );
 }
 
+export type VideoLink = { title: string; channel: string; url: string };
+
+export function VideoList({ items }: { items: VideoLink[] }) {
+  return (
+    <ul className="video-list">
+      {items.map((item) => (
+        <li key={item.url}>
+          <a href={item.url} target="_blank" rel="noreferrer">
+            <span className="video-list__play" aria-hidden="true">▶</span>
+            <span className="video-list__copy">
+              <span className="video-list__title">{item.title}</span>
+              <span className="video-list__channel">{item.channel}</span>
+            </span>
+            <span className="sr-only">(buka di YouTube pada tab baru)</span>
+            <span className="video-list__cue" aria-hidden="true">↗</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export type Source = { label: string; href: string };
 
 export function SourceList({ items }: { items: Source[] }) {

@@ -4,6 +4,7 @@ import {
   SafetyNotice,
   SourceList,
   StepList,
+  VideoList,
 } from "../components/ContentBlocks";
 import { Hero } from "../components/Hero";
 import { PageMeta } from "../components/PageMeta";
@@ -106,6 +107,19 @@ const steps = [
   },
 ];
 
+const videos = [
+  {
+    title: "Cara Membuat Eco Enzyme di Rumah",
+    channel: "TV Tani | Kementerian Pertanian Indonesia",
+    url: "https://youtu.be/3zAoGn2T4WY?si=XRfCRCOKvfj4UrSR",
+  },
+  {
+    title: "Mengolah Sampah Jadi Eco Enzyme: Cara Membuat dan Menggunakannya",
+    channel: "Kebun Indra Tarigan",
+    url: "https://youtu.be/D8uHmDACckM?si=wBqxEt5ZA5bz2huB",
+  },
+];
+
 const sources = [
   {
     label: "BRMP Pertanian Jawa Tengah: Pembuatan dan Pemanfaatan Eco Enzyme",
@@ -198,6 +212,17 @@ export default function EcoEnzymePage() {
             <strong>Jangan dipanen lebih awal.</strong> Hitung 90 hari penuh sejak semua bahan dicampur.
             Gas biasanya lebih banyak terbentuk pada minggu awal. Periksa wadah secara rutin bersama orang dewasa.
           </p>
+        </section>
+
+        <section className="video-section page-section page-container" aria-labelledby="eco-video-title">
+          <div id="eco-video-title">
+            <SectionTitle eyebrow="Belajar dari video">Video Tutorial Eco Enzyme</SectionTitle>
+          </div>
+          <p className="video-section__note">
+            Tonton bersama orang dewasa sebagai pelengkap langkah di atas. Takaran pada video bisa
+            sedikit berbeda, jadi tetap gunakan perbandingan 1 : 3 : 10 dan catatan keamanan di halaman ini.
+          </p>
+          <VideoList items={videos} />
         </section>
 
         <section className="readiness-section page-section page-container" aria-labelledby="readiness-title">

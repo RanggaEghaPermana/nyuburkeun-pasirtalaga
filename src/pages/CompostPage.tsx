@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { FeatureGrid, InfoTileGrid, MediaCard, SafetyNotice, SourceList, StepList } from "../components/ContentBlocks";
+import { FeatureGrid, InfoTileGrid, MediaCard, SafetyNotice, SourceList, StepList, VideoList } from "../components/ContentBlocks";
 import { DeferredSimulation } from "../components/simulations/shared/DeferredSimulation";
 import { Hero } from "../components/Hero";
 import { PageMeta } from "../components/PageMeta";
@@ -85,6 +85,19 @@ const compostSteps = [
   },
 ];
 
+const videos = [
+  {
+    title: "Cara Membuat Kompos dari Sampah Rumah Tangga Tanpa Bau",
+    channel: "Santai Berkebun",
+    url: "https://youtu.be/kwajGch9cKA?si=1J6n8m1wIVphwHUS",
+  },
+  {
+    title: "Cara Membuat Kompos dari Sampah Dapur Tanpa EM4",
+    channel: "RR Garden",
+    url: "https://youtu.be/ftaxJ2C7LKA?si=ImL72jh2bWfiA5k3",
+  },
+];
+
 const sources = [
   {
     label: "Composting at Home: United States Environmental Protection Agency",
@@ -141,6 +154,17 @@ export default function CompostPage() {
             <SectionTitle>Ayo Membuat Kompos</SectionTitle>
           </div>
           <StepList items={compostSteps} />
+        </section>
+
+        <section className="video-section page-section page-container" aria-labelledby="compost-video-title">
+          <div id="compost-video-title">
+            <SectionTitle>Video Tutorial Kompos</SectionTitle>
+          </div>
+          <p className="video-section__note">
+            Tonton bersama orang dewasa sebagai pelengkap langkah di atas. Cara pada video bisa sedikit
+            berbeda, jadi tetap ikuti catatan keamanan di halaman ini.
+          </p>
+          <VideoList items={videos} />
         </section>
 
         <div className="simulation-section page-section page-container">
