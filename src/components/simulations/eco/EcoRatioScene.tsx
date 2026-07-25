@@ -1,7 +1,9 @@
 import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Color, DoubleSide, type Group } from "three";
+import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
+import { StageDressing } from "../shared/StageDressing";
 import { smoothLatheGeometry } from "../shared/geometry";
 import { ECO_CAPACITY, type EcoState } from "./evaluateEcoRatio";
 
@@ -36,8 +38,10 @@ const INTERIOR_BOTTOM = -0.84;
 const INTERIOR_TOP = 0.9;
 const PART_HEIGHT = (INTERIOR_TOP - INTERIOR_BOTTOM) / ECO_CAPACITY;
 
-const FRESH_LIQUID = new Color("#e4e0a2");
-const RIPE_LIQUID = new Color("#9c6526");
+// Warna dibuat cukup pekat agar cairannya tetap terbaca di balik kaca dan di
+// atas latar krem, bukan menghilang seperti sebelumnya.
+const FRESH_LIQUID = new Color("#b6cc63");
+const RIPE_LIQUID = new Color("#8a5119");
 
 const SCRAP_SPOTS = Array.from({ length: 9 }, (_, index) => {
   const angle = index * 2.39;
@@ -123,6 +127,7 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
       <directionalLight position={[-4.6, 3.2, -3.4]} intensity={0.68} color="#b6dcc6" />
 
       <OrbitCameraControls target={[0, 0.1, 0]} minDistance={3.4} maxDistance={8.5} />
+      <StageDressing groundY={-1.24} scale={5.4} />
 
       <mesh position={[0, -1.36, 0]} receiveShadow>
         <cylinderGeometry args={[1.9, 2.05, 0.22, 40]} />
@@ -134,15 +139,27 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
       </mesh>
 
       {filled > 0 ? (
-        <mesh position={[0, INTERIOR_BOTTOM + (liquidHeight / 2), 0]}>
-          <cylinderGeometry args={[0.715, 0.7, liquidHeight, 32]} />
-          <meshStandardMaterial
-            color={liquidColor}
-            roughness={0.24}
-            transparent
-            opacity={0.86}
-          />
-        </mesh>
+        <>
+          <mesh position={[0, INTERIOR_BOTTOM + (liquidHeight / 2), 0]}>
+            <cylinderGeometry args={[0.712, 0.698, liquidHeight, 32]} />
+            <meshStandardMaterial
+              color={liquidColor}
+              metalness={0.1}
+              opacity={0.94}
+              roughness={0.14}
+              transparent
+            />
+          </mesh>
+          {/* Cakram permukaan membuat tinggi air terbaca jelas dari atas. */}
+          <mesh position={[0, surfaceY - 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.708, 32]} />
+            <meshStandardMaterial color={liquidColor} metalness={0.24} roughness={0.06} />
+          </mesh>
+          <mesh position={[0, surfaceY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.686, 0.714, 32]} />
+            <meshStandardMaterial color="#ffffff" opacity={0.34} transparent />
+          </mesh>
+        </>
       ) : null}
 
       {state.sugar > 0 ? (
@@ -175,15 +192,7 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
       />
 
       <mesh geometry={JAR_GLASS}>
-        <meshPhysicalMaterial
-          color="#d6ebe6"
-          transmission={0.52}
-          thickness={0.24}
-          transparent
-          opacity={0.44}
-          roughness={0.1}
-          side={DoubleSide}
-        />
+        <GlassMaterial color="#e6f2ed" thickness={0.22} />
       </mesh>
 
       {state.sealed ? (

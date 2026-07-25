@@ -13,8 +13,11 @@ import {
   type EcoState,
 } from "./evaluateEcoRatio";
 
+type EcoIngredient = "sugar" | "scraps" | "water";
+
 type EcoLabAction =
-  | { type: "add"; kind: "sugar" | "scraps" | "water" }
+  | { type: "add"; kind: EcoIngredient }
+  | { type: "remove"; kind: EcoIngredient }
   | { type: "seal" }
   | { type: "wait" }
   | { type: "reset" };
@@ -23,6 +26,12 @@ const CAMERA = {
   position: [3.1, 2.4, 5.3] as [number, number, number],
   fov: 38,
 };
+
+const INGREDIENTS: { kind: EcoIngredient; label: string; target: number }[] = [
+  { kind: "sugar", label: "Gula", target: 1 },
+  { kind: "scraps", label: "Sisa buah & sayur", target: 3 },
+  { kind: "water", label: "Air", target: 10 },
+];
 
 function ecoReducer(state: EcoState, action: EcoLabAction): EcoState {
   switch (action.type) {
@@ -35,6 +44,16 @@ function ecoReducer(state: EcoState, action: EcoLabAction): EcoState {
       return {
         ...state,
         [action.kind]: state[action.kind] + 1,
+        actionId: state.actionId + 1,
+        lastAction: action.kind,
+      };
+    }
+    case "remove": {
+      if (state.sealed || state[action.kind] === 0) return state;
+
+      return {
+        ...state,
+        [action.kind]: state[action.kind] - 1,
         actionId: state.actionId + 1,
         lastAction: action.kind,
       };
@@ -103,35 +122,40 @@ export function EcoRatioLab() {
       panel={({ instructionId }) => (
         <>
           <div
-            className="sim-lab__controls"
+            className="sim-lab__steppers"
             role="group"
             aria-describedby={instructionId}
             aria-label="Kontrol takaran eco enzyme"
           >
-            <button
-              className="sim-lab__control sim-lab__control--sugar"
-              type="button"
-              disabled={state.sealed || state.sugar >= ECO_LIMITS.sugar || filled >= ECO_CAPACITY}
-              onClick={() => dispatch({ type: "add", kind: "sugar" })}
-            >
-              <span aria-hidden="true">＋</span> Gula ({state.sugar})
-            </button>
-            <button
-              className="sim-lab__control sim-lab__control--green"
-              type="button"
-              disabled={state.sealed || state.scraps >= ECO_LIMITS.scraps || filled >= ECO_CAPACITY}
-              onClick={() => dispatch({ type: "add", kind: "scraps" })}
-            >
-              <span aria-hidden="true">＋</span> Sisa buah &amp; sayur ({state.scraps})
-            </button>
-            <button
-              className="sim-lab__control sim-lab__control--water"
-              type="button"
-              disabled={state.sealed || state.water >= ECO_LIMITS.water || filled >= ECO_CAPACITY}
-              onClick={() => dispatch({ type: "add", kind: "water" })}
-            >
-              <span aria-hidden="true">＋</span> Air ({state.water})
-            </button>
+            {INGREDIENTS.map(({ kind, label, target }) => (
+              <div className="sim-lab__stepper" key={kind}>
+                <span className="sim-lab__stepper-label">
+                  {label} <span>· target {target} bagian</span>
+                </span>
+                <div className="sim-lab__stepper-controls">
+                  <button
+                    aria-label={`Kurangi ${label}`}
+                    disabled={state.sealed || state[kind] === 0}
+                    onClick={() => dispatch({ type: "remove", kind })}
+                    type="button"
+                  >
+                    −
+                  </button>
+                  <strong aria-live="off">{state[kind]}</strong>
+                  <button
+                    aria-label={`Tambah ${label}`}
+                    disabled={state.sealed || state[kind] >= ECO_LIMITS[kind] || filled >= ECO_CAPACITY}
+                    onClick={() => dispatch({ type: "add", kind })}
+                    type="button"
+                  >
+                    ＋
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="sim-lab__controls" role="group" aria-label="Tahap fermentasi">
             <button
               className="sim-lab__control sim-lab__control--mix"
               type="button"

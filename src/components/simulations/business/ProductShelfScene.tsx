@@ -1,5 +1,7 @@
 import { DoubleSide } from "three";
+import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
+import { StageDressing } from "../shared/StageDressing";
 import { roundedPlateGeometry, smoothLatheGeometry, warpGeometry } from "../shared/geometry";
 import type { Container, ProductState } from "./evaluateProduct";
 
@@ -72,15 +74,7 @@ function ContainerMesh({ container }: { container: Container }) {
     return (
       <>
         <mesh geometry={BOTTLE_BODY}>
-          <meshPhysicalMaterial
-            color="#cf9b45"
-            transmission={0.34}
-            thickness={0.2}
-            transparent
-            opacity={0.72}
-            roughness={0.18}
-            side={DoubleSide}
-          />
+          <GlassMaterial color="#e0b463" ior={1.4} thickness={0.3} />
         </mesh>
         <mesh position={[0, 0.56, 0]}>
           <cylinderGeometry args={[0.155, 0.155, 0.12, 22]} />
@@ -93,15 +87,7 @@ function ContainerMesh({ container }: { container: Container }) {
   return (
     <>
       <mesh geometry={JAR_BODY}>
-        <meshPhysicalMaterial
-          color="#cfe4de"
-          transmission={0.46}
-          thickness={0.24}
-          transparent
-          opacity={0.6}
-          roughness={0.12}
-          side={DoubleSide}
-        />
+        <GlassMaterial color="#e4f1ec" thickness={0.26} />
       </mesh>
       <mesh position={[0, 0.5, 0]}>
         <cylinderGeometry args={[0.29, 0.29, 0.12, 26]} />
@@ -121,6 +107,7 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
       <directionalLight position={[-4.2, 3, -3]} intensity={0.7} color="#b6dcc6" />
 
       <OrbitCameraControls target={[0, 0.08, 0]} minDistance={2.6} maxDistance={7} />
+      <StageDressing groundY={-0.69} scale={4} />
 
       <mesh position={[0, -0.78, 0]}>
         <cylinderGeometry args={[1.45, 1.6, 0.18, 40]} />

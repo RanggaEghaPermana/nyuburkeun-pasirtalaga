@@ -138,7 +138,7 @@ export function evaluateEcoRatio(state: EcoState): EcoEvaluation {
       tone: "attention",
       title: "Wadahnya terlalu penuh",
       message: "Fermentasi menghasilkan gas. Kalau wadah terisi penuh, tekanannya menumpuk dan wadah bisa mengembung atau bocor.",
-      nextAction: `Sisakan minimal ${ECO_MIN_HEADSPACE}% ruang kosong di atas. Tekan "Ulangi" lalu susun ulang takarannya.`,
+      nextAction: `Sisakan minimal ${ECO_MIN_HEADSPACE}% ruang kosong di atas. Kurangi bahan dengan tombol − sampai ruang gasnya cukup.`,
     };
   }
 

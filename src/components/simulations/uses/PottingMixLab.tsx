@@ -14,8 +14,15 @@ import {
 
 type MixAction =
   | { type: "add"; material: MixMaterial }
+  | { type: "remove"; material: MixMaterial }
   | { type: "water"; watering: Watering }
   | { type: "reset" };
+
+const MATERIALS: { material: MixMaterial; label: string; hint: string }[] = [
+  { material: "soil", label: "Tanah", hint: "bagian terbanyak" },
+  { material: "compost", label: "Kompos matang", hint: "sekitar seperempat" },
+  { material: "sand", label: "Pasir", hint: "sedikit saja" },
+];
 
 const CAMERA = {
   position: [2.7, 2.1, 4.6] as [number, number, number],
@@ -33,6 +40,28 @@ function mixReducer(state: MixState, action: MixAction): MixState {
         ...state,
         [action.material]: state[action.material] + 1,
         layers: [...state.layers, { id: state.actionId + 1, material: action.material }],
+        actionId: state.actionId + 1,
+      };
+    }
+    case "remove": {
+      if (state[action.material] === 0) return state;
+
+      // Butir terakhir dari bahan itu yang dilepas, agar tinggi isi pot ikut
+      // turun sesuai jumlah yang benar-benar tersisa.
+      let lastIndex = -1;
+      for (let index = state.layers.length - 1; index >= 0; index -= 1) {
+        if (state.layers[index].material === action.material) {
+          lastIndex = index;
+          break;
+        }
+      }
+
+      if (lastIndex === -1) return state;
+
+      return {
+        ...state,
+        [action.material]: state[action.material] - 1,
+        layers: state.layers.filter((_, index) => index !== lastIndex),
         actionId: state.actionId + 1,
       };
     }
@@ -108,35 +137,40 @@ export function PottingMixLab() {
       panel={({ instructionId }) => (
         <>
           <div
-            className="sim-lab__controls"
+            className="sim-lab__steppers"
             role="group"
             aria-describedby={instructionId}
-            aria-label="Kontrol media tanam"
+            aria-label="Kontrol bahan media tanam"
           >
-            <button
-              className="sim-lab__control sim-lab__control--brown"
-              type="button"
-              disabled={state.layers.length >= MIX_CAPACITY}
-              onClick={() => dispatch({ type: "add", material: "soil" })}
-            >
-              <span aria-hidden="true">＋</span> Tanah ({state.soil})
-            </button>
-            <button
-              className="sim-lab__control sim-lab__control--green"
-              type="button"
-              disabled={state.layers.length >= MIX_CAPACITY}
-              onClick={() => dispatch({ type: "add", material: "compost" })}
-            >
-              <span aria-hidden="true">＋</span> Kompos matang ({state.compost})
-            </button>
-            <button
-              className="sim-lab__control sim-lab__control--sugar"
-              type="button"
-              disabled={state.layers.length >= MIX_CAPACITY}
-              onClick={() => dispatch({ type: "add", material: "sand" })}
-            >
-              <span aria-hidden="true">＋</span> Pasir ({state.sand})
-            </button>
+            {MATERIALS.map(({ material, label, hint }) => (
+              <div className="sim-lab__stepper" key={material}>
+                <span className="sim-lab__stepper-label">
+                  {label} <span>· {hint}</span>
+                </span>
+                <div className="sim-lab__stepper-controls">
+                  <button
+                    aria-label={`Kurangi ${label}`}
+                    disabled={state[material] === 0}
+                    onClick={() => dispatch({ type: "remove", material })}
+                    type="button"
+                  >
+                    −
+                  </button>
+                  <strong aria-live="off">{state[material]}</strong>
+                  <button
+                    aria-label={`Tambah ${label}`}
+                    disabled={state.layers.length >= MIX_CAPACITY}
+                    onClick={() => dispatch({ type: "add", material })}
+                    type="button"
+                  >
+                    ＋
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="sim-lab__controls" role="group" aria-label="Cara menyiram">
             <button
               className="sim-lab__control sim-lab__control--water"
               type="button"

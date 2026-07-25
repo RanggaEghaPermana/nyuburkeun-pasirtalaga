@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { CatmullRomCurve3, Color, DoubleSide, TubeGeometry, Vector3, type Group } from "three";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
+import { StageDressing } from "../shared/StageDressing";
 import { dryLeafGeometry, smoothLatheGeometry, type LeafShape } from "../shared/geometry";
 import { MIX_CAPACITY, type MixMaterial, type MixState } from "./evaluatePottingMix";
 
@@ -184,6 +185,7 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
       <directionalLight position={[-4.4, 3, -3.2]} intensity={0.7} color="#b2dbc4" />
 
       <OrbitCameraControls target={[0, 0.15, 0]} minDistance={3} maxDistance={8} />
+      <StageDressing groundY={-0.7} scale={4.6} />
 
       <mesh position={[0, -0.78, 0]}>
         <cylinderGeometry args={[1.7, 1.85, 0.2, 40]} />

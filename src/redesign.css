@@ -2421,10 +2421,81 @@ main {
   text-underline-offset: 3px;
 }
 
+/* Nonaktif harus terbaca jelas: menurunkan opacity saja masih menyisakan tombol
+   beraksen yang tampak bisa diklik. */
 .sim-lab__control:disabled,
 .sim-lab__reset:disabled {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 4%);
+  color: rgb(255 255 255 / 40%);
   cursor: not-allowed;
-  opacity: .56;
+  opacity: 1;
+  transform: none;
+}
+
+.sim-lab__control:disabled span {
+  color: inherit;
+}
+
+/* Penambah dan pengurang bahan, supaya takaran yang kelewat banyak bisa
+   dikoreksi tanpa harus mengulang seluruh simulasi. */
+.sim-lab__steppers {
+  display: grid;
+  gap: 10px;
+}
+
+.sim-lab__stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 16px;
+  padding: 10px 12px 10px 16px;
+  background: rgb(255 255 255 / 6%);
+}
+
+.sim-lab__stepper-label {
+  font-size: 14px;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.sim-lab__stepper-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sim-lab__stepper-controls strong {
+  min-width: 30px;
+  color: var(--accent);
+  font-size: 17px;
+  text-align: center;
+}
+
+.sim-lab__stepper-controls button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 10%);
+  color: var(--white);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sim-lab__stepper-controls button:hover:not(:disabled) {
+  border-color: rgb(220 255 120 / 60%);
+  background: rgb(255 255 255 / 18%);
+}
+
+.sim-lab__stepper-controls button:disabled {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 3%);
+  color: rgb(255 255 255 / 32%);
+  cursor: not-allowed;
 }
 
 :where(
