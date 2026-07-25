@@ -136,20 +136,21 @@ function youtubeId(url: string) {
   }
 }
 
-export function VideoList({ items }: { items: VideoLink[] }) {
+export function VideoList({ items, tone = "light" }: { items: readonly VideoLink[]; tone?: "light" | "dark" }) {
   // Hanya satu video boleh diputar agar suaranya tidak bertumpuk.
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   return (
-    <ul className="video-list">
+    <ul className={`video-list${tone === "dark" ? " video-list--dark" : ""}`}>
       {items.map((item) => {
         const id = youtubeId(item.url);
+        const isPlaying = id !== null && playingId === id;
 
         return (
-          <li className="video-card" key={item.url}>
+          <li className={`video-card${isPlaying ? " video-card--playing" : ""}`} key={item.url}>
             {id ? (
               <div className="video-card__frame">
-                {playingId === id ? (
+                {isPlaying ? (
                   <iframe
                     className="video-card__player"
                     src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}

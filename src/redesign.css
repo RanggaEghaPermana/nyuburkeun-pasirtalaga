@@ -740,6 +740,90 @@ main {
   text-underline-offset: 3px;
 }
 
+/* Varian gelap: dipakai di dalam kartu strategi hijau di halaman peluang usaha.
+   Nilai border, latar, dan warna hover disamakan dengan pill tautan sebelumnya
+   agar tetap terasa bagian dari kartu itu, bukan tempelan. */
+.video-list--dark {
+  gap: 12px;
+  margin-top: 12px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Baris ringkas: thumbnail mini di kiri, teks di kanan, agar tinggi kartu
+   strategi hampir tidak berubah. Saat diputar, kartu beralih ke satu kolom
+   sehingga player mendapat lebar penuh. */
+.video-list--dark .video-card {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  grid-template-columns: 104px minmax(0, 1fr);
+  border-color: rgb(255 255 255 / 20%);
+  border-radius: 14px;
+  padding: 8px;
+  background: rgb(255 255 255 / 8%);
+  box-shadow: none;
+  transition: border-color .2s ease, background .2s ease;
+}
+
+.video-list--dark .video-card:hover {
+  border-color: rgb(220 255 120 / 70%);
+  background: rgb(255 255 255 / 14%);
+}
+
+.video-list--dark .video-card--playing {
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+}
+
+.video-list--dark .video-card__frame {
+  overflow: hidden;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 34%);
+}
+
+.video-list--dark .video-card--playing .video-card__frame {
+  border-radius: 13px 13px 0 0;
+}
+
+.video-list--dark .video-card__play {
+  width: 30px;
+  height: 30px;
+  padding-left: 2px;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 34%);
+  font-size: 10px;
+}
+
+.video-list--dark .video-card--playing .video-card__play {
+  width: 46px;
+  height: 46px;
+  font-size: 15px;
+}
+
+.video-list--dark .video-card__copy {
+  gap: 2px;
+  padding: 2px 6px 2px 0;
+}
+
+.video-list--dark .video-card--playing .video-card__copy {
+  padding: 12px 14px 14px;
+}
+
+.video-list--dark .video-card__copy h3 {
+  color: var(--white);
+  font-size: 14px;
+}
+
+.video-list--dark .video-card__channel {
+  color: rgb(255 255 255 / 62%);
+  font-size: 12px;
+}
+
+.video-list--dark .video-card__external {
+  color: var(--accent);
+  font-size: 13px;
+}
+
 /* Home learning cards become layered bento cards. */
 .home-benefits {
   padding-top: clamp(54px, 5vw, 72px);
@@ -953,8 +1037,8 @@ main {
   background: var(--brand-deep);
 }
 
-.strategy-card__copy h3,
-.strategy-card:nth-child(odd) .strategy-card__copy h3 {
+.strategy-card__copy > h3,
+.strategy-card:nth-child(odd) .strategy-card__copy > h3 {
   margin-bottom: 14px;
   padding: 0;
   background: transparent;
@@ -963,12 +1047,13 @@ main {
   font-weight: 640;
 }
 
-.strategy-card__copy p {
+/* Anak langsung saja: kartu ini menampung komponen lain yang punya <p> sendiri. */
+.strategy-card__copy > p {
   color: var(--muted);
   font-size: 16px;
 }
 
-.strategy-card:nth-child(odd) .strategy-card__copy p {
+.strategy-card:nth-child(odd) .strategy-card__copy > p {
   color: rgb(255 255 255 / 82%);
 }
 
@@ -1247,33 +1332,11 @@ main {
   letter-spacing: .01em;
 }
 
-.strategy-card__link-list,
 .strategy-card__steps {
   display: grid;
   gap: 8px;
   padding: 0;
   list-style: none;
-}
-
-.strategy-card__link-list a {
-  display: flex;
-  min-height: 42px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 12px;
-  padding: 9px 12px;
-  background: rgb(255 255 255 / 8%);
-  color: var(--white);
-  font-size: 14px;
-  font-weight: 650;
-  text-decoration: none;
-}
-
-.strategy-card__link-list a:hover {
-  border-color: rgb(220 255 120 / 70%);
-  background: rgb(255 255 255 / 14%);
 }
 
 .strategy-card__steps {
@@ -3075,8 +3138,8 @@ main {
     height: 175px;
   }
 
-  .strategy-card__copy h3,
-  .strategy-card:nth-child(odd) .strategy-card__copy h3 {
+  .strategy-card__copy > h3,
+  .strategy-card:nth-child(odd) .strategy-card__copy > h3 {
     font-size: 22px;
   }
 
@@ -3173,11 +3236,6 @@ main {
   .strategy-card__resources,
   .strategy-card__steps {
     margin-top: 16px;
-  }
-
-  .strategy-card__link-list a {
-    min-height: 48px;
-    font-size: 13px;
   }
 
   .video-list {

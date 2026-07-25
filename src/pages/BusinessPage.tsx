@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Hero } from "../components/Hero";
-import { InfoTileGrid } from "../components/ContentBlocks";
+import { InfoTileGrid, VideoList, type VideoLink } from "../components/ContentBlocks";
 import { PageMeta } from "../components/PageMeta";
 import { SectionTitle } from "../components/SectionTitle";
 import { SiteFooter } from "../components/SiteFooter";
@@ -38,7 +38,7 @@ type Strategy = {
   imageLabels?: readonly string[];
   kind?: "branding" | "promotion";
   visualLabel?: string;
-  tutorials?: ReadonlyArray<{ label: string; url: string }>;
+  tutorials?: readonly VideoLink[];
   steps?: readonly string[];
   instagramUrl?: string;
 };
@@ -58,11 +58,13 @@ const strategies: Strategy[] = [
     visualLabel: "Logo usaha dan contoh label produk kompos serta eco enzyme",
     tutorials: [
       {
-        label: "Cara Membuat Label Produk di Canva",
+        title: "Cara Membuat Label Produk di Canva",
+        channel: "Dhanirsa Channel",
         url: "https://youtu.be/3uaIK315454?si=qfnVcJoUwxOOQuz3",
       },
       {
-        label: "5 Menit Desain Logo Pakai Canva",
+        title: "5 Menit Desain Logo Pakai Canva",
+        channel: "Kece Media by Unesa",
         url: "https://youtu.be/NJBIYkNqW8k?si=hD08nD8Rl1zrKIzc",
       },
     ],
@@ -306,15 +308,7 @@ export default function BusinessPage() {
                   {strategy.tutorials ? (
                     <div className="strategy-card__resources">
                       <strong>Tutorial membuat label atau logo:</strong>
-                      <ul className="strategy-card__link-list">
-                        {strategy.tutorials.map((tutorial) => (
-                          <li key={tutorial.url}>
-                            <a href={tutorial.url} target="_blank" rel="noreferrer">
-                              {tutorial.label} <span aria-hidden="true">↗</span>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
+                      <VideoList items={strategy.tutorials} tone="dark" />
                     </div>
                   ) : null}
                   {strategy.steps ? (
