@@ -1,6 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Color, DoubleSide, type Group } from "three";
+import { FitCamera } from "../shared/FitCamera";
 import { GardenBackdrop } from "../shared/GardenBackdrop";
 import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
@@ -156,7 +157,8 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
       <directionalLight position={[4.2, 7.4, 5.5]} intensity={2.15} color="#fff2cf" />
       <directionalLight position={[-4.6, 3.2, -3.4]} intensity={0.68} color="#b6dcc6" />
 
-      <OrbitCameraControls target={[0, 0.1, 0]} minDistance={4.6} maxDistance={10} />
+      <FitCamera centerY={0.1} radius={1.62} />
+      <OrbitCameraControls target={[0, 0.1, 0]} minDistance={3.6} maxDistance={16} />
       <GardenBackdrop />
       <StageDressing groundY={-1.44} scale={5.4} />
 

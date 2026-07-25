@@ -1,6 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { CatmullRomCurve3, Color, DoubleSide, TubeGeometry, Vector3, type Group } from "three";
+import { FitCamera } from "../shared/FitCamera";
 import { GardenBackdrop } from "../shared/GardenBackdrop";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
@@ -218,7 +219,8 @@ export function PottingMixScene({
       <directionalLight position={[4, 7.2, 5.2]} intensity={2.2} color="#fff2cf" />
       <directionalLight position={[-4.4, 3, -3.2]} intensity={0.7} color="#b2dbc4" />
 
-      <OrbitCameraControls target={[0, 0.25, 0]} minDistance={4.4} maxDistance={9.5} />
+      <FitCamera centerY={0.3} radius={1.5} />
+      <OrbitCameraControls target={[0, 0.3, 0]} minDistance={3.4} maxDistance={15} />
       {/* Latar kebun yang sama dengan simulasi sampah dan kompos, digeser agar
           tanahnya jatuh tepat di bawah meja pot. */}
       <group position={[0, 0.47, 0]} scale={0.9}>

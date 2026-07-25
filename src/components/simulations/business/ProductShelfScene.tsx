@@ -2,11 +2,12 @@ import { useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import { DoubleSide, SRGBColorSpace, TextureLoader } from "three";
 import { assets } from "../../../lib/assets";
+import { FitCamera } from "../shared/FitCamera";
 import { GardenBackdrop } from "../shared/GardenBackdrop";
 import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
-import { roundedPlateGeometry, smoothLatheGeometry, warpGeometry } from "../shared/geometry";
+import { roundedPlateGeometry, smoothLatheGeometry, surfaceBandGeometry, warpGeometry } from "../shared/geometry";
 import type { Container, ProductState } from "./evaluateProduct";
 
 // Pouch berdiri: menggembung di tengah, menyempit ke atas, dan punya dasar
@@ -24,7 +25,7 @@ const POUCH_BODY = warpGeometry(roundedPlateGeometry(0.58, 0.84, 0.44, 0.1), (ve
 const POUCH_SEAL = roundedPlateGeometry(0.5, 0.09, 0.06, 0.02);
 const POUCH_SEAM = roundedPlateGeometry(0.05, 0.8, 0.07, 0.02);
 
-const BOTTLE_BODY = smoothLatheGeometry([
+const BOTTLE_PROFILE = [
   [0.001, -0.6],
   [0.2, -0.61],
   [0.29, -0.55],
@@ -33,9 +34,9 @@ const BOTTLE_BODY = smoothLatheGeometry([
   [0.16, 0.36],
   [0.145, 0.5],
   [0.001, 0.51],
-]);
+] as const;
 
-const JAR_BODY = smoothLatheGeometry([
+const JAR_PROFILE = [
   [0.001, -0.52],
   [0.24, -0.53],
   [0.35, -0.46],
@@ -44,11 +45,30 @@ const JAR_BODY = smoothLatheGeometry([
   [0.27, 0.38],
   [0.275, 0.45],
   [0.001, 0.46],
-]);
+] as const;
+
+const BOTTLE_BODY = smoothLatheGeometry(BOTTLE_PROFILE);
+const JAR_BODY = smoothLatheGeometry(JAR_PROFILE);
+
+// Rentang sudut dipilih agar panjang busurnya sebanding dengan tinggi label,
+// sehingga gambar labelnya tidak tertarik atau gepeng.
+const BOTTLE_LABEL = surfaceBandGeometry(BOTTLE_PROFILE, {
+  fromY: -0.42,
+  toY: 0.2,
+  offset: 0.005,
+  thetaStart: -0.69,
+  thetaLength: 1.38,
+});
+
+const JAR_LABEL = surfaceBandGeometry(JAR_PROFILE, {
+  fromY: -0.36,
+  toY: 0.26,
+  offset: 0.005,
+  thetaStart: -0.56,
+  thetaLength: 1.12,
+});
 
 const INFO_TAG = roundedPlateGeometry(0.3, 0.22, 0.014, 0.02);
-
-const BODY_RADIUS: Record<Container, number> = { pouch: 0, bottle: 0.3, jar: 0.375 };
 
 // Label memakai desain resmi yang sudah dipakai di galeri branding, bukan kotak
 // putih kosong: pouch membawa label kompos, botol dan toples membawa label eco
@@ -119,7 +139,6 @@ function ContainerMesh({ container }: { container: Container }) {
 }
 
 export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
-  const radius = BODY_RADIUS[state.container];
   const invalidate = useThree((threeState) => threeState.invalidate);
 
   // Tekstur dimuat imperatif lalu meminta satu gambar ulang setelah selesai,
@@ -139,7 +158,8 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
       <directionalLight position={[3.8, 6.8, 5]} intensity={2.1} color="#fff2cf" />
       <directionalLight position={[-4.2, 3, -3]} intensity={0.7} color="#b6dcc6" />
 
-      <OrbitCameraControls target={[0, 0.05, 0]} minDistance={3.8} maxDistance={8.5} />
+      <FitCamera centerY={0.02} radius={1.18} />
+      <OrbitCameraControls target={[0, 0.02, 0]} minDistance={2.8} maxDistance={13} />
       <group position={[0, 0.33, 0]} scale={0.8}>
         <GardenBackdrop />
       </group>
@@ -177,15 +197,21 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
         </>
       ) : null}
 
+      {/* Label mengikuti profil wadahnya sendiri, bukan silinder lurus yang
+          ditempel di atasnya, sehingga tepinya menyatu dengan lengkungan badan. */}
       {state.hasLabel ? (
         state.container === "pouch" ? (
-          <mesh position={[0, 0.12, 0.185]}>
-            <planeGeometry args={[0.4, 0.56]} />
-            <meshStandardMaterial map={labelTexture} roughness={0.86} toneMapped={false} />
+          <mesh position={[0, 0.12, -0.35]}>
+            <cylinderGeometry args={[0.55, 0.55, 0.56, 26, 1, true, -0.36, 0.72]} />
+            <meshStandardMaterial
+              map={labelTexture}
+              roughness={0.88}
+              side={DoubleSide}
+              toneMapped={false}
+            />
           </mesh>
         ) : (
-          <mesh position={[0, 0.02, 0]}>
-            <cylinderGeometry args={[radius + 0.01, radius + 0.006, 0.62, 30, 1, true, -0.78, 1.56]} />
+          <mesh geometry={state.container === "bottle" ? BOTTLE_LABEL : JAR_LABEL}>
             <meshStandardMaterial
               map={labelTexture}
               roughness={0.86}

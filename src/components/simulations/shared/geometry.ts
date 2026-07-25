@@ -126,6 +126,71 @@ export function smoothLatheGeometry(
   return geometry;
 }
 
+type SurfaceBandOptions = {
+  fromY: number;
+  toY: number;
+  offset?: number;
+  thetaStart?: number;
+  thetaLength?: number;
+  segments?: number;
+  samples?: number;
+};
+
+// Label yang dibuat dari silinder lurus akan menggantung di atas badan wadah
+// yang meruncing, sehingga tepinya terlihat menempel begitu saja. Pita ini
+// dibangun dari profil wadahnya sendiri, digeser sedikit keluar mengikuti arah
+// permukaan, jadi lengkung dan tirusnya sama persis dengan wadahnya.
+export function surfaceBandGeometry(
+  profile: readonly (readonly [number, number])[],
+  {
+    fromY,
+    toY,
+    offset = 0.006,
+    thetaStart = 0,
+    thetaLength = Math.PI * 2,
+    segments = 34,
+    samples = 120,
+  }: SurfaceBandOptions,
+) {
+  const spline = new CatmullRomCurve3(profile.map(([radius, y]) => new Vector3(radius, y, 0)));
+  const radii = profile.map(([radius]) => radius);
+  const heights = profile.map(([, y]) => y);
+  const maxRadius = Math.max(...radii);
+  const minHeight = Math.min(...heights);
+  const maxHeight = Math.max(...heights);
+
+  const sampled = spline.getPoints(samples).map((point) => new Vector2(
+    Math.min(Math.max(point.x, 0.0006), maxRadius),
+    Math.min(Math.max(point.y, minHeight), maxHeight),
+  ));
+
+  const band: Vector2[] = [];
+
+  for (let index = 0; index < sampled.length; index += 1) {
+    const point = sampled[index];
+    if (point.y < fromY || point.y > toY) continue;
+
+    const previous = sampled[Math.max(index - 1, 0)];
+    const next = sampled[Math.min(index + 1, sampled.length - 1)];
+    const tangent = new Vector2(next.x - previous.x, next.y - previous.y);
+    if (tangent.lengthSq() < 1e-10) continue;
+    tangent.normalize();
+
+    // Normal luar pada bidang profil: putar tangen 90° sehingga mengarah menjauh
+    // dari sumbu putar.
+    band.push(new Vector2(
+      point.x + (tangent.y * offset),
+      point.y - (tangent.x * offset),
+    ));
+  }
+
+  if (band.length < 2) band.push(new Vector2(maxRadius + offset, fromY), new Vector2(maxRadius + offset, toY));
+
+  const geometry = new LatheGeometry(band, segments, thetaStart, thetaLength);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 type RibbonOptions = {
   curve: CatmullRomCurve3;
   width: (progress: number) => number;
