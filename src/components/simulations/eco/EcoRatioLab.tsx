@@ -24,7 +24,7 @@ type EcoLabAction =
   | { type: "reset" };
 
 const CAMERA = {
-  position: [4.0, 3.1, 7.0] as [number, number, number],
+  position: [4.0, 2.4, 7.0] as [number, number, number],
   fov: 36,
 };
 

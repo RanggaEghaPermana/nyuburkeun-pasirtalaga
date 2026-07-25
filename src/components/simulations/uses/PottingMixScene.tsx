@@ -211,6 +211,9 @@ export function PottingMixScene({
 
   return (
     <>
+      <color attach="background" args={["#dcebd1"]} />
+      <fog attach="fog" args={["#dcebd1", 6.8, 14]} />
+
       <hemisphereLight intensity={1.36} color="#fff7dc" groundColor="#4a6350" />
       <directionalLight position={[4, 7.2, 5.2]} intensity={2.2} color="#fff2cf" />
       <directionalLight position={[-4.4, 3, -3.2]} intensity={0.7} color="#b2dbc4" />

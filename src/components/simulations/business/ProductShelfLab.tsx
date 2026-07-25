@@ -22,7 +22,7 @@ type ProductAction =
   | { type: "reset" };
 
 const CAMERA = {
-  position: [3.2, 2.4, 5.4] as [number, number, number],
+  position: [3.2, 1.75, 5.4] as [number, number, number],
   fov: 36,
 };
 

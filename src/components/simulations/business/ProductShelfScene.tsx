@@ -132,6 +132,9 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
 
   return (
     <>
+      <color attach="background" args={["#dcebd5"]} />
+      <fog attach="fog" args={["#dcebd5", 6.2, 13]} />
+
       <hemisphereLight intensity={1.3} color="#fff7dc" groundColor="#4c6353" />
       <directionalLight position={[3.8, 6.8, 5]} intensity={2.1} color="#fff2cf" />
       <directionalLight position={[-4.2, 3, -3]} intensity={0.7} color="#b6dcc6" />

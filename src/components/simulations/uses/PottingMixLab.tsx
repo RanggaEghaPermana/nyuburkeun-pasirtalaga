@@ -29,7 +29,7 @@ const MATERIALS: { material: MixMaterial; label: string; hint: string }[] = [
 ];
 
 const CAMERA = {
-  position: [3.5, 2.9, 6.2] as [number, number, number],
+  position: [3.5, 2.15, 6.2] as [number, number, number],
   fov: 36,
 };
 
