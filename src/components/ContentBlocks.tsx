@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 export type Feature = {
   title: string;
@@ -125,22 +125,67 @@ export function SafetyNotice({ title = "Gunakan dengan aman", children }: { titl
 
 export type VideoLink = { title: string; channel: string; url: string };
 
+function youtubeId(url: string) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.endsWith("youtu.be")
+      ? parsed.pathname.slice(1) || null
+      : parsed.searchParams.get("v");
+  } catch {
+    return null;
+  }
+}
+
 export function VideoList({ items }: { items: VideoLink[] }) {
+  // Hanya satu video boleh diputar agar suaranya tidak bertumpuk.
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
   return (
     <ul className="video-list">
-      {items.map((item) => (
-        <li key={item.url}>
-          <a href={item.url} target="_blank" rel="noreferrer">
-            <span className="video-list__play" aria-hidden="true">▶</span>
-            <span className="video-list__copy">
-              <span className="video-list__title">{item.title}</span>
-              <span className="video-list__channel">{item.channel}</span>
-            </span>
-            <span className="sr-only">(buka di YouTube pada tab baru)</span>
-            <span className="video-list__cue" aria-hidden="true">↗</span>
-          </a>
-        </li>
-      ))}
+      {items.map((item) => {
+        const id = youtubeId(item.url);
+
+        return (
+          <li className="video-card" key={item.url}>
+            {id ? (
+              <div className="video-card__frame">
+                {playingId === id ? (
+                  <iframe
+                    className="video-card__player"
+                    src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
+                    title={item.title}
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen
+                  />
+                ) : (
+                  <button type="button" className="video-card__cover" onClick={() => setPlayingId(id)}>
+                    <img
+                      src={`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`}
+                      alt=""
+                      aria-hidden="true"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+                      }}
+                    />
+                    <span className="video-card__play" aria-hidden="true">▶</span>
+                    <span className="sr-only">Putar video {item.title}</span>
+                  </button>
+                )}
+              </div>
+            ) : null}
+            <div className="video-card__copy">
+              <h3>{item.title}</h3>
+              <p className="video-card__channel">{item.channel}</p>
+              <a className="video-card__external" href={item.url} target="_blank" rel="noreferrer">
+                Buka di YouTube
+                <span className="sr-only"> (tab baru)</span>
+                <span aria-hidden="true"> ↗</span>
+              </a>
+            </div>
+          </li>
+        );
+      })}
     </ul>
   );
 }
