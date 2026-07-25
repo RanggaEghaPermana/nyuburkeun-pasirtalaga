@@ -4,7 +4,7 @@ import { CatmullRomCurve3, Color, DoubleSide, TubeGeometry, Vector3, type Group 
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
 import { dryLeafGeometry, smoothLatheGeometry, type LeafShape } from "../shared/geometry";
-import { MIX_CAPACITY, type MixMaterial, type MixState } from "./evaluatePottingMix";
+import { MIX_CAPACITY, type MixMaterial, type MixState, type Watering } from "./evaluatePottingMix";
 
 const POT = smoothLatheGeometry([
   [0.001, -0.62],
@@ -85,6 +85,20 @@ const DROPS = Array.from({ length: 9 }, (_, index) => ({
   speed: 1.5 + ((index % 3) * 0.35),
 }));
 
+// Tiap cara menyiram diberi warna tetesan, warna kaleng, dan jejak pada
+// permukaan yang berbeda, supaya bedanya terlihat bukan hanya terbaca di angka.
+const WATERING_LOOK: Record<Watering, {
+  drop: string;
+  can: string;
+  sheen: string | null;
+  sheenOpacity: number;
+}> = {
+  none: { drop: "#a6d8ea", can: "#8fb6c9", sheen: null, sheenOpacity: 0 },
+  plain: { drop: "#8fd0ea", can: "#8fb6c9", sheen: "#3f2d1c", sheenOpacity: 0.42 },
+  "eco-diluted": { drop: "#d8cf7e", can: "#b9a75c", sheen: "#6d5a24", sheenOpacity: 0.34 },
+  "eco-strong": { drop: "#8a5a1e", can: "#7d5220", sheen: "#43290c", sheenOpacity: 0.68 },
+};
+
 const HEALTHY_LEAF = new Color("#57893c");
 const WEAK_LEAF = new Color("#b09a3f");
 
@@ -93,7 +107,7 @@ function layerRadius(index: number) {
   return 0.42 + (progress * 0.18);
 }
 
-function Droplets({ active }: { active: boolean }) {
+function Droplets({ active, color }: { active: boolean; color: string }) {
   const groupRef = useRef<Group>(null);
   const invalidate = useThree((threeState) => threeState.invalidate);
   const elapsed = useRef(0);
@@ -120,8 +134,8 @@ function Droplets({ active }: { active: boolean }) {
     <group ref={groupRef}>
       {DROPS.map((drop, index) => (
         <mesh key={index} position={[drop.x, 1.15, drop.z]}>
-          <sphereGeometry args={[0.028, 8, 6]} />
-          <meshStandardMaterial color="#a6d8ea" roughness={0.2} transparent opacity={0.85} />
+          <sphereGeometry args={[0.032, 8, 6]} />
+          <meshStandardMaterial color={color} metalness={0.18} roughness={0.14} />
         </mesh>
       ))}
     </group>
@@ -177,6 +191,8 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
 
   const plantScale = 0.85 + (health * 0.5);
   const droop = (1 - health) * 0.8;
+  const look = WATERING_LOOK[state.watering];
+  const thriving = health >= 0.82 && total >= 9;
 
   return (
     <>
@@ -219,6 +235,26 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
           <mesh geometry={STEM}>
             <meshStandardMaterial color="#4e7536" roughness={0.86} />
           </mesh>
+          {/* Hasil akhir yang baik diberi tanda yang terlihat: kuncup bunga
+              muncul saat campuran dan penyiramannya benar. */}
+          {thriving ? (
+            <>
+              <mesh position={[0.02, 0.66, 0]}>
+                <sphereGeometry args={[0.055, 12, 10]} />
+                <meshStandardMaterial color="#f0c34a" roughness={0.6} />
+              </mesh>
+              {[0.7, 2.8, 4.9].map((angle) => (
+                <mesh
+                  key={angle}
+                  position={[Math.cos(angle) * 0.075, 0.655, Math.sin(angle) * 0.075]}
+                  scale={[1, 0.45, 1]}
+                >
+                  <sphereGeometry args={[0.05, 10, 8]} />
+                  <meshStandardMaterial color="#f6e7a8" roughness={0.68} />
+                </mesh>
+              ))}
+            </>
+          ) : null}
           {LEAF_PLACEMENTS.map((placement, index) => (
             <group key={index} position={[0, placement.height, 0]} rotation={[0, placement.angle, 0]}>
               <mesh
@@ -238,13 +274,43 @@ export function PottingMixScene({ state, plantHealth, pouring, reduceMotion }: P
         <meshStandardMaterial color="#b5714b" roughness={0.9} side={DoubleSide} />
       </mesh>
 
+      {/* Jejak basah tetap tinggal setelah menyiram, jadi sebelum dan sesudahnya
+          bisa dibedakan tanpa harus melihat animasinya. */}
+      {total > 0 && look.sheen ? (
+        <mesh position={[0, fillTop + 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[layerRadius(total - 1) - 0.01, 30]} />
+          <meshStandardMaterial
+            color={look.sheen}
+            metalness={0.16}
+            opacity={look.sheenOpacity}
+            roughness={0.24}
+            transparent
+          />
+        </mesh>
+      ) : null}
+
+      {state.watering === "eco-strong" && total > 0 ? (
+        <>
+          {[0.2, 0.44].map((radius, index) => (
+            <mesh
+              key={radius}
+              position={[index === 0 ? -0.12 : 0.16, fillTop + 0.008, index === 0 ? 0.1 : -0.14]}
+              rotation={[-Math.PI / 2, 0, 0]}
+            >
+              <circleGeometry args={[radius * 0.4, 20]} />
+              <meshStandardMaterial color="#2e1a06" roughness={0.4} />
+            </mesh>
+          ))}
+        </>
+      ) : null}
+
       {pouring && !reduceMotion ? (
         <>
           <mesh position={[-0.45, 1.28, 0.1]} rotation={[0, 0.4, 0.9]}>
             <cylinderGeometry args={[0.2, 0.24, 0.34, 20]} />
-            <meshStandardMaterial color="#8fb6c9" metalness={0.35} roughness={0.5} />
+            <meshStandardMaterial color={look.can} metalness={0.35} roughness={0.5} />
           </mesh>
-          <Droplets active />
+          <Droplets active color={look.drop} />
         </>
       ) : null}
     </>

@@ -1,4 +1,5 @@
 import { useReducer } from "react";
+import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationShell } from "../shared/SimulationShell";
 import { useWebGLSupport } from "../shared/useWebGLSupport";
 import { useReducedMotion } from "../shared/useReducedMotion";
@@ -121,6 +122,25 @@ export function EcoRatioLab() {
       )}
       panel={({ instructionId }) => (
         <>
+          <RecipeCard
+            note="Perbandingannya boleh dikalikan, misal 2 : 6 : 20, selama wadahnya masih menyisakan ruang untuk gas."
+            steps={[
+              { label: "Masukkan gula sebagai patokan takaran", done: state.sugar > 0 },
+              {
+                label: "Sisa buah & sayur = 3 kali gula",
+                done: state.sugar > 0 && Math.abs((state.scraps / state.sugar) - 3) <= 0.4,
+              },
+              {
+                label: "Air = 10 kali gula",
+                done: state.sugar > 0 && Math.abs((state.water / state.sugar) - 10) <= 1,
+              },
+              { label: "Sisakan ruang gas minimal 20%", done: filled > 0 && evaluation.headspace >= 20 },
+              { label: "Tutup wadahnya", done: state.sealed },
+              { label: "Simpan di tempat teduh sampai hari ke-90", done: state.days >= ECO_FERMENT_DAYS },
+            ]}
+            title="Resep Eco Enzyme"
+          />
+
           <div
             className="sim-lab__steppers"
             role="group"

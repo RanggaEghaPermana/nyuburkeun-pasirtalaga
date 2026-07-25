@@ -1,4 +1,5 @@
 import { useReducer } from "react";
+import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationShell } from "../shared/SimulationShell";
 import { useWebGLSupport } from "../shared/useWebGLSupport";
 import { ProductShelfScene } from "./ProductShelfScene";
@@ -89,6 +90,19 @@ export function ProductShelfLab() {
       )}
       panel={({ instructionId }) => (
         <>
+          <RecipeCard
+            note="Untung dihitung dari harga jual dikurangi biaya kemasan. Harga yang jujur dan masuk kisaran pembeli lebih mudah laku daripada harga termurah."
+            steps={[
+              { label: "Pilih kemasan yang sesuai isinya", done: true },
+              { label: "Tempelkan label berisi nama usaha", done: state.hasLabel },
+              { label: "Tulis komposisi, manfaat, dan cara pakai", done: state.hasInfo },
+              { label: "Harga jual di atas biaya kemasan", done: evaluation.margin > 0 },
+              { label: "Untung minimal 20% dari harga jual", done: evaluation.marginShare >= 20 },
+              { label: "Harga masuk kisaran nyaman pembeli", done: evaluation.appealScore === 100 },
+            ]}
+            title="Resep Produk Siap Jual"
+          />
+
           <div
             className="sim-lab__controls"
             role="group"

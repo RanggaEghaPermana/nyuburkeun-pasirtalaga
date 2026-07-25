@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState } from "react";
+import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationShell } from "../shared/SimulationShell";
 import { useWebGLSupport } from "../shared/useWebGLSupport";
 import { useReducedMotion } from "../shared/useReducedMotion";
@@ -136,6 +137,27 @@ export function PottingMixLab() {
       )}
       panel={({ instructionId }) => (
         <>
+          <RecipeCard
+            note="Kompos itu campuran, bukan pengganti tanah. Pot yang diisi kompos murni menahan terlalu banyak air."
+            steps={[
+              { label: "Tanah jadi bagian terbanyak", done: evaluation.soilShare >= 48 },
+              {
+                label: "Kompos matang sekitar seperempat pot",
+                done: evaluation.compostShare >= 18 && evaluation.compostShare <= 34,
+              },
+              {
+                label: "Sedikit pasir supaya air mengalir",
+                done: evaluation.sandShare >= 5 && evaluation.sandShare <= 22,
+              },
+              { label: `Isi pot minimal 9 dari ${MIX_CAPACITY} bagian`, done: state.layers.length >= 9 },
+              {
+                label: "Siram air biasa atau eco enzyme yang sudah diencerkan",
+                done: state.watering === "plain" || state.watering === "eco-diluted",
+              },
+            ]}
+            title="Resep Media Tanam"
+          />
+
           <div
             className="sim-lab__steppers"
             role="group"

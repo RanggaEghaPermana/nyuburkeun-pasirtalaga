@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useReducer, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationErrorBoundary } from "../shared/SimulationErrorBoundary";
 import {
   COMPOST_MIX_DURATION_MS,
@@ -292,6 +293,18 @@ export function CompostBalanceLab() {
         </div>
 
         <div className="sim-lab__panel">
+          <RecipeCard
+            note="Sasarannya sekitar dua bagian bahan cokelat untuk satu bagian bahan hijau, dengan kelembapan seperti spons yang sudah diperas."
+            steps={[
+              { label: "Masukkan bahan hijau: sisa sayur atau kulit buah", done: state.greens > 0 },
+              { label: "Masukkan bahan cokelat: daun kering atau kardus", done: state.browns > 0 },
+              { label: "Bahan cokelat sekitar dua kali bahan hijau", done: evaluation.ratioScore >= 80 },
+              { label: "Kelembapan seperti spons diperas, tidak becek", done: state.moisture >= 35 && state.moisture <= 70 },
+              { label: "Aduk supaya udara masuk", done: state.mixCount > 0 && state.aeration >= 65 },
+            ]}
+            title="Resep Kompos"
+          />
+
           <div
             className="sim-lab__controls"
             role="group"

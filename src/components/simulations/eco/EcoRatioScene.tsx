@@ -34,6 +34,17 @@ const JAR_LID = smoothLatheGeometry([
   [0.001, 0.96],
 ]);
 
+const HARVEST_BOTTLE = smoothLatheGeometry([
+  [0.001, -0.24],
+  [0.13, -0.25],
+  [0.19, -0.19],
+  [0.195, 0.12],
+  [0.17, 0.22],
+  [0.1, 0.3],
+  [0.098, 0.41],
+  [0.001, 0.42],
+]);
+
 const INTERIOR_BOTTOM = -0.84;
 const INTERIOR_TOP = 0.9;
 const PART_HEIGHT = (INTERIOR_TOP - INTERIOR_BOTTOM) / ECO_CAPACITY;
@@ -99,7 +110,7 @@ function Bubbles({ bottom, height, active }: { bottom: number; height: number; a
       {BUBBLES.map((bubble, index) => (
         <mesh key={index} position={[bubble.x, bottom, bubble.z]}>
           <sphereGeometry args={[bubble.size, 8, 6]} />
-          <meshStandardMaterial color="#fdfbe9" transparent opacity={0.5} roughness={0.3} />
+          <meshStandardMaterial color="#fbf7d8" metalness={0.2} roughness={0.16} />
         </mesh>
       ))}
     </group>
@@ -118,7 +129,20 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
     [ripeness],
   );
 
+  // Permukaan dibuat sedikit lebih terang dan cincinnya lebih gelap agar batas
+  // air tetap terbaca pada warna cairan apa pun.
+  const surfaceColor = useMemo(
+    () => new Color().lerpColors(FRESH_LIQUID, RIPE_LIQUID, ripeness).lerp(new Color("#ffffff"), 0.22).getStyle(),
+    [ripeness],
+  );
+
+  const rimColor = useMemo(
+    () => new Color().lerpColors(FRESH_LIQUID, RIPE_LIQUID, ripeness).lerp(new Color("#000000"), 0.3).getStyle(),
+    [ripeness],
+  );
+
   const visibleScraps = SCRAP_SPOTS.slice(0, Math.min(state.scraps, SCRAP_SPOTS.length));
+  const harvested = state.sealed && state.days >= 90;
 
   return (
     <>
@@ -140,24 +164,20 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
 
       {filled > 0 ? (
         <>
+          {/* Isi wadah dibuat opaque: three hanya menyalin objek opaque ke buffer
+              transmisi, sehingga cairan transparan tidak akan terlihat sama
+              sekali di balik kaca. */}
           <mesh position={[0, INTERIOR_BOTTOM + (liquidHeight / 2), 0]}>
             <cylinderGeometry args={[0.712, 0.698, liquidHeight, 32]} />
-            <meshStandardMaterial
-              color={liquidColor}
-              metalness={0.1}
-              opacity={0.94}
-              roughness={0.14}
-              transparent
-            />
+            <meshStandardMaterial color={liquidColor} metalness={0.08} roughness={0.22} />
           </mesh>
-          {/* Cakram permukaan membuat tinggi air terbaca jelas dari atas. */}
           <mesh position={[0, surfaceY - 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <circleGeometry args={[0.708, 32]} />
-            <meshStandardMaterial color={liquidColor} metalness={0.24} roughness={0.06} />
+            <meshStandardMaterial color={surfaceColor} metalness={0.28} roughness={0.05} />
           </mesh>
-          <mesh position={[0, surfaceY, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.686, 0.714, 32]} />
-            <meshStandardMaterial color="#ffffff" opacity={0.34} transparent />
+          <mesh position={[0, surfaceY + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.688, 0.714, 32]} />
+            <meshStandardMaterial color={rimColor} roughness={0.3} />
           </mesh>
         </>
       ) : null}
@@ -201,10 +221,36 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
         </mesh>
       ) : null}
 
-      <mesh position={[0, INTERIOR_TOP + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.66, 0.72, 32]} />
-        <meshStandardMaterial color="#8ec6a6" transparent opacity={0.5} side={DoubleSide} />
-      </mesh>
+      {/* Hasil akhir dibuat kelihatan: setelah 90 hari, botol saringan muncul di
+          samping wadah supaya anak melihat apa yang sebenarnya dipanen. */}
+      {harvested ? (
+        <group position={[1.28, -0.52, 0.16]} rotation={[0, -0.36, 0]}>
+          <mesh geometry={HARVEST_BOTTLE}>
+            <GlassMaterial color="#f0e6cf" thickness={0.2} />
+          </mesh>
+          <mesh position={[0, -0.03, 0]}>
+            <cylinderGeometry args={[0.185, 0.175, 0.4, 22]} />
+            <meshStandardMaterial color={liquidColor} metalness={0.1} roughness={0.24} />
+          </mesh>
+          <mesh position={[0, 0.17, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.183, 22]} />
+            <meshStandardMaterial color={surfaceColor} metalness={0.28} roughness={0.06} />
+          </mesh>
+          <mesh position={[0, 0.36, 0]}>
+            <cylinderGeometry args={[0.098, 0.098, 0.09, 18]} />
+            <meshStandardMaterial color="#3f6f52" roughness={0.48} />
+          </mesh>
+          <mesh position={[0, -0.03, 0.192]}>
+            <planeGeometry args={[0.2, 0.16]} />
+            <meshStandardMaterial color="#fdf8ec" roughness={0.9} side={DoubleSide} />
+          </mesh>
+        </group>
+      ) : (
+        <mesh position={[0, INTERIOR_TOP + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.66, 0.72, 32]} />
+          <meshStandardMaterial color="#8ec6a6" side={DoubleSide} />
+        </mesh>
+      )}
     </>
   );
 }

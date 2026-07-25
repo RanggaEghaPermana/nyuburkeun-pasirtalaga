@@ -2203,6 +2203,7 @@ main {
 }
 
 .sim-lab__status {
+  margin-top: 18px;
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 18px;
   padding: 17px;
@@ -2322,8 +2323,8 @@ main {
 .sim-lab__metrics {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin: 12px 0;
+  gap: 12px;
+  margin: 18px 0;
 }
 
 .sim-lab__metrics > div {
@@ -2369,13 +2370,19 @@ main {
 .sim-lab__controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: auto;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+/* Blok kontrol yang berurutan perlu jarak yang jelas, bukan menempel. */
+.sim-lab__steppers + .sim-lab__controls,
+.sim-lab__controls + .sim-lab__controls {
+  margin-top: 18px;
 }
 
 .sim-lab__control,
 .sim-lab__reset {
-  min-height: 44px;
+  min-height: 48px;
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 13px;
   padding: 9px 11px;
@@ -2435,6 +2442,87 @@ main {
 
 .sim-lab__control:disabled span {
   color: inherit;
+}
+
+/* Kartu resep: sasaran langkah demi langkah dengan centang yang hidup. */
+.sim-lab__recipe {
+  margin-bottom: 18px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 18px;
+  padding: 15px 17px;
+  background: rgb(255 255 255 / 7%);
+}
+
+.sim-lab__recipe--complete {
+  border-color: rgb(215 240 138 / 50%);
+  background: rgb(215 240 138 / 12%);
+}
+
+.sim-lab__recipe-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sim-lab__recipe-head p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 680;
+}
+
+.sim-lab__recipe-head span {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 640;
+  white-space: nowrap;
+}
+
+.sim-lab__recipe ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sim-lab__recipe li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  color: rgb(255 255 255 / 68%);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.sim-lab__recipe li.is-done {
+  color: var(--white);
+}
+
+.sim-lab__recipe-mark {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-content: center;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sim-lab__recipe li.is-done .sim-lab__recipe-mark {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--brand-ink);
+}
+
+.sim-lab__recipe-note {
+  margin: 12px 0 0;
+  color: rgb(255 255 255 / 66%);
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 /* Penambah dan pengurang bahan, supaya takaran yang kelewat banyak bisa
