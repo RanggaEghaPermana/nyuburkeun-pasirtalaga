@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { CatmullRomCurve3, Color, DoubleSide, TubeGeometry, Vector3, type Group } from "three";
 import { FitCamera } from "../shared/FitCamera";
 import { GardenBackdrop } from "../shared/GardenBackdrop";
+import { GardenPerimeter } from "../shared/GardenPerimeter";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
 import { dryLeafGeometry, smoothLatheGeometry, type LeafShape } from "../shared/geometry";
@@ -213,7 +214,7 @@ export function PottingMixScene({
   return (
     <>
       <color attach="background" args={["#dcebd1"]} />
-      <fog attach="fog" args={["#dcebd1", 6.8, 14]} />
+      <fog attach="fog" args={["#dcebd1", 8.5, 16.5]} />
 
       <hemisphereLight intensity={1.36} color="#fff7dc" groundColor="#4a6350" />
       <directionalLight position={[4, 7.2, 5.2]} intensity={2.2} color="#fff2cf" />
@@ -224,9 +225,21 @@ export function PottingMixScene({
       {/* Latar kebun yang sama dengan simulasi sampah dan kompos, digeser agar
           tanahnya jatuh tepat di bawah meja pot. */}
       <group position={[0, 0.47, 0]} scale={0.9}>
-        <GardenBackdrop />
+        <GardenBackdrop includeFrontTufts={false} />
+        <GardenPerimeter />
       </group>
       <StageDressing groundY={-0.88} scale={4.6} />
+
+      {/* Tambalan tanah di bawah meja pot supaya mejanya terbaca berdiri di
+          atas tanah kebun, bukan melayang di depan kabut. */}
+      <mesh position={[0, -0.882, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.6, 40]} />
+        <meshStandardMaterial color="#70563b" roughness={1} />
+      </mesh>
+      <mesh position={[0, -0.878, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.38, 2.6, 40]} />
+        <meshStandardMaterial color="#5d4630" roughness={1} />
+      </mesh>
 
       <mesh position={[0, -0.78, 0]}>
         <cylinderGeometry args={[1.7, 1.85, 0.2, 40]} />

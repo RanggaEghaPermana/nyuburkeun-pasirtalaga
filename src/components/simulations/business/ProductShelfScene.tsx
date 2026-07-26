@@ -4,6 +4,7 @@ import { DoubleSide, SRGBColorSpace, TextureLoader } from "three";
 import { assets } from "../../../lib/assets";
 import { FitCamera } from "../shared/FitCamera";
 import { GardenBackdrop } from "../shared/GardenBackdrop";
+import { GardenPerimeter } from "../shared/GardenPerimeter";
 import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
@@ -152,7 +153,7 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
   return (
     <>
       <color attach="background" args={["#dcebd5"]} />
-      <fog attach="fog" args={["#dcebd5", 6.2, 13]} />
+      <fog attach="fog" args={["#dcebd5", 8, 16]} />
 
       <hemisphereLight intensity={1.3} color="#fff7dc" groundColor="#4c6353" />
       <directionalLight position={[3.8, 6.8, 5]} intensity={2.1} color="#fff2cf" />
@@ -161,9 +162,21 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
       <FitCamera centerY={0.02} radius={1.18} />
       <OrbitCameraControls target={[0, 0.02, 0]} minDistance={2.8} maxDistance={13} />
       <group position={[0, 0.33, 0]} scale={0.8}>
-        <GardenBackdrop />
+        <GardenBackdrop includeFrontTufts={false} />
+        <GardenPerimeter />
       </group>
       <StageDressing groundY={-0.88} scale={4} />
+
+      {/* Tambalan tanah di bawah rak supaya raknya terbaca berdiri di atas
+          tanah kebun, bukan melayang di depan kabut. */}
+      <mesh position={[0, -0.878, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.3, 40]} />
+        <meshStandardMaterial color="#70563b" roughness={1} />
+      </mesh>
+      <mesh position={[0, -0.874, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.1, 2.3, 40]} />
+        <meshStandardMaterial color="#5d4630" roughness={1} />
+      </mesh>
 
       <mesh position={[0, -0.78, 0]}>
         <cylinderGeometry args={[1.45, 1.6, 0.18, 40]} />

@@ -53,9 +53,25 @@ function GrassTuft({ position, rotation = 0 }: { position: [number, number, numb
   );
 }
 
-export const GardenBackdrop = memo(function GardenBackdrop() {
+export const GardenBackdrop = memo(function GardenBackdrop({
+  includeFrontTufts = true,
+}: {
+  // Tuft depan pas untuk kamera jauh (kompos); pada kamera dekat basisnya
+  // tertutup tatakan sehingga ujungnya terbaca sebagai artefak di tepi frame.
+  includeFrontTufts?: boolean;
+}) {
   return (
     <group>
+      {/* Hamparan jauh yang melampaui lingkaran kebun. Tanpa ini tepi tanah
+          jatuh rendah di layar dan sisanya jadi langit kosong; dengan ini
+          tanahnya membentang sampai termakan kabut, sehingga terbentuk garis
+          horizon. Ditempatkan sedikit di bawah tanah utama agar tidak berebut
+          kedalaman. */}
+      <mesh position={[0, -1.548, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[34, 56]} />
+        <meshStandardMaterial color="#8fb075" roughness={1} />
+      </mesh>
+
       <mesh position={[0, -1.54, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[6.4, 52]} />
         <meshStandardMaterial color="#86a96d" roughness={1} />
@@ -86,8 +102,12 @@ export const GardenBackdrop = memo(function GardenBackdrop() {
       <GardenPlant position={[2.45, -1.34, -1.25]} scale={0.94} tint="#6da657" />
       <GardenPlant position={[-2.65, -1.34, 1.45]} scale={0.76} tint="#4c8540" />
 
-      <GrassTuft position={[-1.75, -1.5, 1.65]} rotation={0.3} />
-      <GrassTuft position={[1.85, -1.5, 1.45]} rotation={-0.4} />
+      {includeFrontTufts ? (
+        <>
+          <GrassTuft position={[-1.75, -1.5, 1.65]} rotation={0.3} />
+          <GrassTuft position={[1.85, -1.5, 1.45]} rotation={-0.4} />
+        </>
+      ) : null}
       <GrassTuft position={[-1.75, -1.5, -1.85]} rotation={-0.2} />
       <GrassTuft position={[1.72, -1.5, -1.9]} rotation={0.52} />
 

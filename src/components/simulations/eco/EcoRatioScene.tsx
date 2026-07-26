@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Color, DoubleSide, type Group } from "three";
 import { FitCamera } from "../shared/FitCamera";
 import { GardenBackdrop } from "../shared/GardenBackdrop";
+import { GardenPerimeter } from "../shared/GardenPerimeter";
 import { GlassMaterial } from "../shared/GlassMaterial";
 import { OrbitCameraControls } from "../shared/OrbitCameraControls";
 import { StageDressing } from "../shared/StageDressing";
@@ -151,7 +152,7 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
       {/* Langit dan kabut disamakan dengan simulasi sampah dan kompos, supaya
           area di atas horizon tidak tembus ke latar halaman. */}
       <color attach="background" args={["#dcebd1"]} />
-      <fog attach="fog" args={["#dcebd1", 7.5, 15.5]} />
+      <fog attach="fog" args={["#dcebd1", 8.5, 17]} />
 
       <hemisphereLight intensity={1.34} color="#fff7dc" groundColor="#4b6152" />
       <directionalLight position={[4.2, 7.4, 5.5]} intensity={2.15} color="#fff2cf" />
@@ -159,8 +160,20 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
 
       <FitCamera centerY={0.1} radius={1.62} />
       <OrbitCameraControls target={[0, 0.1, 0]} minDistance={3.6} maxDistance={16} />
-      <GardenBackdrop />
+      <GardenBackdrop includeFrontTufts={false} />
+      <GardenPerimeter />
       <StageDressing groundY={-1.44} scale={5.4} />
+
+      {/* Tambalan tanah di bawah tatakan supaya wadah terbaca berdiri di atas
+          tanah kebun, bukan melayang di depan kabut. */}
+      <mesh position={[0, -1.508, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.9, 40]} />
+        <meshStandardMaterial color="#70563b" roughness={1} />
+      </mesh>
+      <mesh position={[0, -1.504, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.66, 2.9, 40]} />
+        <meshStandardMaterial color="#5d4630" roughness={1} />
+      </mesh>
 
       <mesh position={[0, -1.36, 0]} receiveShadow>
         <cylinderGeometry args={[1.9, 2.05, 0.22, 40]} />
