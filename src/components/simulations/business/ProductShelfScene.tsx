@@ -88,6 +88,15 @@ const FILL_COLOR: Record<Container, string> = {
   jar: "#9c5f22",
 };
 
+// Piringan rak berpuncak di y = -0.61. Botol memang berakhir tepat di sana,
+// sedangkan toples dan pouch berakhir lebih tinggi, jadi keduanya diturunkan
+// supaya menempel pada piringan dan tidak terlihat melayang.
+const CONTAINER_DROP: Record<Container, number> = {
+  pouch: -0.29,
+  bottle: 0,
+  jar: -0.08,
+};
+
 type ProductShelfSceneProps = {
   state: ProductState;
   ready: boolean;
@@ -187,53 +196,55 @@ export function ProductShelfScene({ state, ready }: ProductShelfSceneProps) {
         <meshStandardMaterial color={ready ? "#8fbf6d" : "#8b9c8f"} roughness={0.88} />
       </mesh>
 
-      <ContainerMesh container={state.container} />
+      <group position={[0, CONTAINER_DROP[state.container], 0]}>
+        <ContainerMesh container={state.container} />
 
-      {/* Isi kemasan supaya produknya tidak terlihat kosong. */}
-      {state.container === "bottle" ? (
-        <mesh position={[0, -0.16, 0]}>
-          <cylinderGeometry args={[0.284, 0.275, 0.72, 26]} />
-          <meshStandardMaterial color={FILL_COLOR.bottle} metalness={0.1} roughness={0.28} />
-        </mesh>
-      ) : null}
+        {/* Isi kemasan supaya produknya tidak terlihat kosong. */}
+        {state.container === "bottle" ? (
+          <mesh position={[0, -0.16, 0]}>
+            <cylinderGeometry args={[0.284, 0.275, 0.72, 26]} />
+            <meshStandardMaterial color={FILL_COLOR.bottle} metalness={0.1} roughness={0.28} />
+          </mesh>
+        ) : null}
 
-      {state.container === "jar" ? (
-        <>
-          <mesh position={[0, -0.12, 0]}>
-            <cylinderGeometry args={[0.356, 0.34, 0.72, 28]} />
-            <meshStandardMaterial color={FILL_COLOR.jar} metalness={0.08} roughness={0.3} />
-          </mesh>
-          <mesh position={[0, 0.245, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.354, 28]} />
-            <meshStandardMaterial color="#b57a33" metalness={0.24} roughness={0.12} />
-          </mesh>
-        </>
-      ) : null}
+        {state.container === "jar" ? (
+          <>
+            <mesh position={[0, -0.12, 0]}>
+              <cylinderGeometry args={[0.356, 0.34, 0.72, 28]} />
+              <meshStandardMaterial color={FILL_COLOR.jar} metalness={0.08} roughness={0.3} />
+            </mesh>
+            <mesh position={[0, 0.245, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[0.354, 28]} />
+              <meshStandardMaterial color="#b57a33" metalness={0.24} roughness={0.12} />
+            </mesh>
+          </>
+        ) : null}
 
-      {/* Label mengikuti profil wadahnya sendiri, bukan silinder lurus yang
-          ditempel di atasnya, sehingga tepinya menyatu dengan lengkungan badan. */}
-      {state.hasLabel ? (
-        state.container === "pouch" ? (
-          <mesh position={[0, 0.12, -0.35]}>
-            <cylinderGeometry args={[0.55, 0.55, 0.56, 26, 1, true, -0.36, 0.72]} />
-            <meshStandardMaterial
-              map={labelTexture}
-              roughness={0.88}
-              side={DoubleSide}
-              toneMapped={false}
-            />
-          </mesh>
-        ) : (
-          <mesh geometry={state.container === "bottle" ? BOTTLE_LABEL : JAR_LABEL}>
-            <meshStandardMaterial
-              map={labelTexture}
-              roughness={0.86}
-              side={DoubleSide}
-              toneMapped={false}
-            />
-          </mesh>
-        )
-      ) : null}
+        {/* Label mengikuti profil wadahnya sendiri, bukan silinder lurus yang
+            ditempel di atasnya, sehingga tepinya menyatu dengan lengkungan badan. */}
+        {state.hasLabel ? (
+          state.container === "pouch" ? (
+            <mesh position={[0, 0.12, -0.35]}>
+              <cylinderGeometry args={[0.55, 0.55, 0.56, 26, 1, true, -0.36, 0.72]} />
+              <meshStandardMaterial
+                map={labelTexture}
+                roughness={0.88}
+                side={DoubleSide}
+                toneMapped={false}
+              />
+            </mesh>
+          ) : (
+            <mesh geometry={state.container === "bottle" ? BOTTLE_LABEL : JAR_LABEL}>
+              <meshStandardMaterial
+                map={labelTexture}
+                roughness={0.86}
+                side={DoubleSide}
+                toneMapped={false}
+              />
+            </mesh>
+          )
+        ) : null}
+      </group>
 
       {state.hasInfo ? (
         <mesh geometry={INFO_TAG} position={[0.56, -0.5, 0.28]} rotation={[-0.32, 0.5, 0.08]}>

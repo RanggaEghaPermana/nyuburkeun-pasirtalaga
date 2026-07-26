@@ -8,7 +8,7 @@ type FitCameraProps = {
   margin?: number;
 };
 
-const DIRECTION = new Vector3(0.52, 0.3, 1).normalize();
+const DIRECTION = new Vector3(0.52, 0.38, 1).normalize();
 
 // Tinggi kanvas laboratorium mengikuti tinggi panel kontrol, sehingga rasio
 // gambarnya berbeda jauh antara ponsel dan laptop. Dengan fov vertikal tetap,
@@ -16,7 +16,7 @@ const DIRECTION = new Vector3(0.52, 0.3, 1).normalize();
 //
 // Jarak kamera karena itu dihitung dari rasio kanvas: sisi yang paling sempit
 // yang menentukan, sehingga bidang pandangnya konsisten di ukuran layar apa pun.
-export function FitCamera({ radius, centerY = 0, margin = 1.16 }: FitCameraProps) {
+export function FitCamera({ radius, centerY = 0, margin = 1.45 }: FitCameraProps) {
   const camera = useThree((state) => state.camera);
   const width = useThree((state) => state.size.width);
   const height = useThree((state) => state.size.height);

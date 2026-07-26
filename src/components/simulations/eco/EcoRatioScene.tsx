@@ -152,7 +152,7 @@ export function EcoRatioScene({ state, reduceMotion, fermenting }: EcoRatioScene
       {/* Langit dan kabut disamakan dengan simulasi sampah dan kompos, supaya
           area di atas horizon tidak tembus ke latar halaman. */}
       <color attach="background" args={["#dcebd1"]} />
-      <fog attach="fog" args={["#dcebd1", 8.5, 17]} />
+      <fog attach="fog" args={["#dcebd1", 10.5, 19]} />
 
       <hemisphereLight intensity={1.34} color="#fff7dc" groundColor="#4b6152" />
       <directionalLight position={[4.2, 7.4, 5.5]} intensity={2.15} color="#fff2cf" />
