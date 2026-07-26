@@ -981,6 +981,42 @@ main {
   color: rgb(255 255 255 / 80%);
 }
 
+/* Kartu kategori tong pilah pada halaman mengenal sampah. Warna aksennya
+   mengikuti warna tong pada simulasi pemilahan 3D supaya anak mudah
+   menghubungkan materi dengan latihannya. */
+.waste-bin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.waste-bin-card {
+  border: 1px solid var(--line);
+  border-top: 6px solid var(--accent, var(--brand));
+  border-radius: 20px;
+  padding: 22px 24px;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 12px 34px rgb(29 68 53 / 8%);
+}
+
+.waste-bin-card__chip {
+  display: inline-block;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: var(--accent, var(--brand));
+  color: var(--accent-contrast, #ffffff);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.waste-bin-card p {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
 .uses-page .uses-section--eco {
   position: relative;
   isolation: isolate;
