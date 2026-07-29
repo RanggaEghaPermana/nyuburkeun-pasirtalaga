@@ -1601,6 +1601,48 @@ main {
   animation: simulation-spin 800ms linear infinite;
 }
 
+/* Tawaran memuat simulasi pada koneksi lambat atau mode hemat data. */
+.simulation-placeholder--offer {
+  flex-direction: column;
+  gap: 14px;
+  padding: 30px 26px;
+  text-align: center;
+}
+
+.simulation-placeholder__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 680;
+}
+
+.simulation-placeholder__start {
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 24px;
+  background: var(--brand);
+  color: var(--white);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 650;
+  transition: background 170ms ease, transform 170ms ease;
+}
+
+.simulation-placeholder__start:hover,
+.simulation-placeholder__start:focus-visible {
+  background: var(--brand-deep);
+  transform: translateY(-1px);
+}
+
+.simulation-placeholder__note {
+  max-width: 380px;
+  margin: 0;
+  color: rgb(12 54 43 / 72%);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
 .simulation-shell {
   display: grid;
   grid-template-columns: minmax(0, .92fr) minmax(460px, 1.08fr);
