@@ -7,6 +7,7 @@ import HomePage from "./pages/HomePage";
 const BusinessPage = lazy(() => import("./pages/BusinessPage"));
 const CompostPage = lazy(() => import("./pages/CompostPage"));
 const EcoEnzymePage = lazy(() => import("./pages/EcoEnzymePage"));
+const PracticePage = lazy(() => import("./pages/PracticePage"));
 const UsesPage = lazy(() => import("./pages/UsesPage"));
 const WastePage = lazy(() => import("./pages/WastePage"));
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/eco-enzyme" element={<EcoEnzymePage />} />
           <Route path="/pemanfaatan" element={<UsesPage />} />
           <Route path="/peluang-usaha" element={<BusinessPage />} />
+          <Route path="/pendamping-praktik" element={<PracticePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
