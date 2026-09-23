@@ -39,12 +39,15 @@ npm run preview
 
 ## Interaksi edukatif
 
-- Laboratorium pemilahan sampah 3D di halaman Mengenal Sampah
-- Simulator keseimbangan bahan kompos 3D di halaman Panduan Kompos
-- Animasi masuk berbasis viewport dengan dukungan `prefers-reduced-motion`
-- Kartu materi dan pemanfaatan berbentuk jalur geser khusus pada layar sentuh
+Setiap halaman materi punya laboratorium 3D yang berlatar kebun yang sama:
 
-Kedua simulasi dimuat secara lazy ketika mendekati viewport supaya halaman awal tetap ringan. Kontrol utamanya tetap berupa elemen HTML yang dapat dipakai tanpa harus berinteraksi langsung dengan kanvas 3D.
+- **Mengenal Sampah** — seret sampah dari keranjang sampah campur ke lima tong beroda berlabel (warna, nama, dan contoh isi). Setiap pilihan benar menjelaskan ke mana sampah itu pergi selanjutnya, dan di akhir semua tutup tong terbuka memperlihatkan isinya.
+- **Panduan Kompos** — ember kompos berlubang udara yang digambar terpotong sehingga lapisan bahan hijau dan cokelat terlihat. Setelah campurannya pas, ember ditutup dan dirawat per dua minggu (aduk dengan sekop, siram bila kering) sampai kompos matang di minggu ke-6.
+- **Eco Enzyme** — takar 1 : 3 : 10 dengan skala di dinding wadah dan garis batas isi, aduk sampai gula larut, tutup rapat, lalu buka tutup perlahan ketika wadah mengembung karena gas sampai hari ke-90.
+- **Pemanfaatan** — racik tanah, kompos, dan pasir di pot terakota terpotong: akar, drainase ke tatakan, atau genangan air terlihat langsung, lalu tanaman tumbuh sampai berbunga.
+- **Peluang Usaha** — rakit kemasan, label, keterangan, dan harga di lapak bazar, lalu buka lapak untuk melihat berapa dari sepuluh pembeli yang membeli beserta untung atau ruginya.
+
+Semua tekstur (rumput, kayu, tanah, plastik, batik, dan label) dilukis secara prosedural di kanvas saat simulasi dimuat, jadi tidak ada berkas gambar atau HDRI tambahan yang diunduh. Simulasi dimuat secara lazy ketika mendekati viewport, dan pada koneksi lambat atau mode hemat data pemuatannya menunggu ketukan. Kontrol utamanya tetap berupa elemen HTML yang dapat dipakai tanpa harus berinteraksi langsung dengan kanvas 3D, dan semua animasi menghormati `prefers-reduced-motion`.
 
 ## Deploy ke Vercel
 

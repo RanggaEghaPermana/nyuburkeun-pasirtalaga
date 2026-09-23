@@ -6,9 +6,11 @@ type FitCameraProps = {
   radius: number;
   centerY?: number;
   margin?: number;
+  // Arah kamera dari titik tengah. Bawaannya sedikit dari kanan atas.
+  direction?: [number, number, number];
 };
 
-const DIRECTION = new Vector3(0.52, 0.38, 1).normalize();
+const DEFAULT_DIRECTION: [number, number, number] = [0.52, 0.38, 1];
 
 // Tinggi kanvas laboratorium mengikuti tinggi panel kontrol, sehingga rasio
 // gambarnya berbeda jauh antara ponsel dan laptop. Dengan fov vertikal tetap,
@@ -16,11 +18,12 @@ const DIRECTION = new Vector3(0.52, 0.38, 1).normalize();
 //
 // Jarak kamera karena itu dihitung dari rasio kanvas: sisi yang paling sempit
 // yang menentukan, sehingga bidang pandangnya konsisten di ukuran layar apa pun.
-export function FitCamera({ radius, centerY = 0, margin = 1.45 }: FitCameraProps) {
+export function FitCamera({ radius, centerY = 0, margin = 1.45, direction = DEFAULT_DIRECTION }: FitCameraProps) {
   const camera = useThree((state) => state.camera);
   const width = useThree((state) => state.size.width);
   const height = useThree((state) => state.size.height);
   const invalidate = useThree((state) => state.invalidate);
+  const [dx, dy, dz] = direction;
 
   useEffect(() => {
     if (!(camera instanceof PerspectiveCamera) || height === 0) return;
@@ -34,11 +37,11 @@ export function FitCamera({ radius, centerY = 0, margin = 1.45 }: FitCameraProps
     const distance = (radius / Math.max(halfVertical * aspect, 0.08)) * margin;
     const target = new Vector3(0, centerY, 0);
 
-    camera.position.copy(target).addScaledVector(DIRECTION, distance);
+    camera.position.copy(target).addScaledVector(new Vector3(dx, dy, dz).normalize(), distance);
     camera.lookAt(target);
     camera.updateProjectionMatrix();
     invalidate();
-  }, [camera, centerY, height, invalidate, margin, radius, width]);
+  }, [camera, centerY, dx, dy, dz, height, invalidate, margin, radius, width]);
 
   return null;
 }

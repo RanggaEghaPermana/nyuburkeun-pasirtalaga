@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useId, useReducer, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { LabCanvas } from "../shared/LabCanvas";
 import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationErrorBoundary } from "../shared/SimulationErrorBoundary";
+import { useWebGLSupport } from "../shared/useWebGLSupport";
 import {
   COMPOST_MIX_DURATION_MS,
   COMPOST_WATER_DURATION_MS,
   CompostScene,
 } from "./CompostScene";
 import {
+  COMPOST_MATURE_WEEKS,
+  COMPOST_WEEK_STEP,
   createInitialCompostState,
   evaluateCompost,
   type CompostMaterial,
@@ -18,6 +21,7 @@ type CompostAction =
   | { type: "add-material"; material: CompostMaterial }
   | { type: "add-water" }
   | { type: "mix" }
+  | { type: "wait" }
   | { type: "reset" };
 
 const MATERIAL_CATEGORY: Record<CompostMaterial, "green" | "brown"> = {
@@ -28,21 +32,14 @@ const MATERIAL_CATEGORY: Record<CompostMaterial, "green" | "brown"> = {
 };
 
 const CAMERA = {
-  position: [3.9, 2.75, 7.45] as [number, number, number],
+  position: [4.3, 3.1, 7.6] as [number, number, number],
   fov: 40,
-};
-
-const DPR: [number, number] = [1, 1.5];
-
-const GL_OPTIONS = {
-  alpha: true,
-  antialias: true,
-  powerPreference: "low-power" as const,
 };
 
 function compostReducer(state: CompostState, action: CompostAction): CompostState {
   switch (action.type) {
     case "add-material": {
+      if (state.weeks > 0) return state;
       const category = MATERIAL_CATEGORY[action.material];
       if ((category === "green" && state.greens >= 12) || (category === "brown" && state.browns >= 12)) {
         return state;
@@ -108,6 +105,7 @@ function compostReducer(state: CompostState, action: CompostAction): CompostStat
         lastMixReport: {
           sequence: nextMixCount,
           layersMixed: state.batches.length,
+          mixedBefore: state.mixedThrough,
           moistureBefore: state.moisture,
           moistureAfter: nextMoisture,
           aerationBefore: state.aeration,
@@ -115,23 +113,21 @@ function compostReducer(state: CompostState, action: CompostAction): CompostStat
         },
       };
     }
+    case "wait":
+      if (!evaluateCompost(state).canWait) return state;
+      return {
+        ...state,
+        weeks: Math.min(state.weeks + COMPOST_WEEK_STEP, COMPOST_MATURE_WEEKS),
+        // Pengurai memakai udara dan panasnya menguapkan air, jadi campuran
+        // perlu diaduk dan kadang disiram lagi.
+        aeration: Math.max(10, state.aeration - 34),
+        moisture: Math.max(10, state.moisture - 7),
+        actionId: state.actionId + 1,
+        lastAction: "wait",
+        lastMixReport: null,
+      };
     case "reset":
       return createInitialCompostState();
-  }
-}
-
-function hasWebGLSupport(): boolean {
-  if (typeof document === "undefined") return false;
-
-  try {
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
-    const supported = Boolean(context);
-
-    context?.getExtension("WEBGL_lose_context")?.loseContext();
-    return supported;
-  } catch {
-    return false;
   }
 }
 
@@ -141,7 +137,8 @@ function hasChanged(state: CompostState): boolean {
     || state.moisture !== 45
     || state.aeration > 0
     || state.mixed
-    || state.mixCount > 0;
+    || state.mixCount > 0
+    || state.weeks > 0;
 }
 
 function buildFallbackLayers(state: CompostState) {
@@ -153,7 +150,7 @@ function buildFallbackLayers(state: CompostState) {
 
 export function CompostBalanceLab() {
   const [state, dispatch] = useReducer(compostReducer, undefined, createInitialCompostState);
-  const [webGLAvailable] = useState(hasWebGLSupport);
+  const webGLAvailable = useWebGLSupport();
   const [reduceMotion, setReduceMotion] = useState(false);
   const [isMixing, setIsMixing] = useState(false);
   const [isWatering, setIsWatering] = useState(false);
@@ -164,10 +161,15 @@ export function CompostBalanceLab() {
   const mixReport = state.lastAction === "mix" ? state.lastMixReport : null;
   const unmixedLayers = Math.max(0, state.batches.length - state.mixedThrough);
   const controlsBusy = isMixing || isWatering;
+  const composting = state.weeks > 0;
   const visualStateLabel = isMixing
     ? "Sedang diaduk"
     : isWatering
       ? "Air sedang meresap"
+    : evaluation.mature
+      ? "Kompos matang · gelap dan remah"
+    : composting
+      ? `Minggu ke-${state.weeks} · ${evaluation.condition === "composting" ? "menghangat" : evaluation.title.toLowerCase()}`
     : state.batches.length === 0
       ? "Ember masih kosong"
       : unmixedLayers > 0
@@ -240,9 +242,9 @@ export function CompostBalanceLab() {
         <p className="sim-lab__eyebrow">Permainan kompos 3D</p>
         <h2 id={titleId}>Ayo Isi Ember Kompos</h2>
         <p id={instructionId}>
-          Pilih bahan satu per satu, tambahkan air seperlunya, lalu aduk. Setiap bahan yang kamu pilih benar-benar masuk ke dalam komposter.
+          Pilih bahan satu per satu, tambahkan air seperlunya, lalu aduk. Ember kompos digambar terpotong supaya lapisan di dalamnya terlihat.
         </p>
-        <p>Seret mendatar area gambar yang kosong untuk memutar kebun 360°. Coba target awal sekitar dua bagian bahan cokelat untuk satu bagian bahan hijau, lalu jaga kelembapannya seperti spons yang sudah diperas.</p>
+        <p>Seret mendatar area gambar untuk memutar ember 360°. Targetnya sekitar dua bagian bahan cokelat untuk satu bagian bahan hijau dengan kelembapan seperti spons yang diperas. Setelah campurannya pas, tutup ember dan rawat sampai komposnya matang.</p>
       </header>
 
       <div className="sim-lab__layout">
@@ -252,20 +254,19 @@ export function CompostBalanceLab() {
               <SimulationErrorBoundary
                 fallback={<div className="sim-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
               >
-                <Canvas
+                <LabCanvas
                   camera={CAMERA}
-                  dpr={DPR}
                   fallback={<div className="sim-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
-                  frameloop="demand"
-                  gl={GL_OPTIONS}
                 >
                   <CompostScene
-                    state={state}
-                    reduceMotion={reduceMotion}
-                    waterActive={isWatering}
+                    condition={evaluation.condition}
+                    mixing={isMixing}
                     onMixComplete={finishMixing}
+                    reduceMotion={reduceMotion}
+                    state={state}
+                    waterActive={isWatering}
                   />
-                </Canvas>
+                </LabCanvas>
               </SimulationErrorBoundary>
             </div>
           ) : (
@@ -286,7 +287,7 @@ export function CompostBalanceLab() {
             </div>
           )}
           <div className="sim-stage-hud" aria-hidden="true">
-            <span>Putar kebun 360°</span>
+            <span>Putar ember 360°</span>
             <strong>{visualStateLabel}</strong>
           </div>
           <div className="sim-stage-scroll-hint" aria-hidden="true">Geser halaman</div>
@@ -300,7 +301,11 @@ export function CompostBalanceLab() {
               { label: "Masukkan bahan cokelat: daun kering atau kardus", done: state.browns > 0 },
               { label: "Bahan cokelat sekitar dua kali bahan hijau", done: evaluation.ratioScore >= 80 },
               { label: "Kelembapan seperti spons diperas, tidak becek", done: state.moisture >= 35 && state.moisture <= 70 },
-              { label: "Aduk supaya udara masuk", done: state.mixCount > 0 && state.aeration >= 65 },
+              { label: "Aduk supaya udara masuk", done: (state.mixCount > 0 && state.aeration >= 65) || composting },
+              {
+                label: `Tutup ember, aduk tiap ${COMPOST_WEEK_STEP} minggu sampai matang di minggu ke-${COMPOST_MATURE_WEEKS}`,
+                done: evaluation.mature,
+              },
             ]}
             title="Resep Kompos"
           />
@@ -315,7 +320,7 @@ export function CompostBalanceLab() {
             <button
               className="sim-lab__control sim-lab__control--green"
               type="button"
-              disabled={controlsBusy || state.greens >= 12}
+              disabled={controlsBusy || composting || state.greens >= 12}
               onClick={() => dispatch({ type: "add-material", material: "vegetable-scraps" })}
             >
               <span aria-hidden="true">＋</span> Sisa sayur
@@ -323,7 +328,7 @@ export function CompostBalanceLab() {
             <button
               className="sim-lab__control sim-lab__control--green"
               type="button"
-              disabled={controlsBusy || state.greens >= 12}
+              disabled={controlsBusy || composting || state.greens >= 12}
               onClick={() => dispatch({ type: "add-material", material: "fruit-peels" })}
             >
               <span aria-hidden="true">＋</span> Kulit buah
@@ -331,7 +336,7 @@ export function CompostBalanceLab() {
             <button
               className="sim-lab__control sim-lab__control--brown"
               type="button"
-              disabled={controlsBusy || state.browns >= 12}
+              disabled={controlsBusy || composting || state.browns >= 12}
               onClick={() => dispatch({ type: "add-material", material: "dry-leaves" })}
             >
               <span aria-hidden="true">＋</span> Daun kering
@@ -339,7 +344,7 @@ export function CompostBalanceLab() {
             <button
               className="sim-lab__control sim-lab__control--brown"
               type="button"
-              disabled={controlsBusy || state.browns >= 12}
+              disabled={controlsBusy || composting || state.browns >= 12}
               onClick={() => dispatch({ type: "add-material", material: "torn-cardboard" })}
             >
               <span aria-hidden="true">＋</span> Kardus sobek
@@ -355,10 +360,18 @@ export function CompostBalanceLab() {
             <button
               className="sim-lab__control sim-lab__control--mix"
               type="button"
-              disabled={controlsBusy || state.batches.length === 0}
+              disabled={controlsBusy || state.batches.length === 0 || evaluation.mature}
               onClick={startMixing}
             >
-              {isMixing ? "Sedang mengaduk…" : "Aduk campuran"}
+              {isMixing ? "Sedang mengaduk…" : "Aduk dengan sekop"}
+            </button>
+            <button
+              className="sim-lab__control sim-lab__control--mix"
+              type="button"
+              disabled={controlsBusy || !evaluation.canWait}
+              onClick={() => dispatch({ type: "wait" })}
+            >
+              {evaluation.mature ? "✓ Kompos matang" : `Tutup & tunggu ${COMPOST_WEEK_STEP} minggu`}
             </button>
           </div>
 
@@ -437,6 +450,15 @@ export function CompostBalanceLab() {
                   {state.aeration}%
                 </meter>
                 <span>{state.aeration}% · {evaluation.aerationLabel}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Umur kompos</dt>
+              <dd>
+                <meter min={0} max={COMPOST_MATURE_WEEKS} low={2} high={5} optimum={COMPOST_MATURE_WEEKS} value={state.weeks}>
+                  {state.weeks} minggu
+                </meter>
+                <span>{composting ? `Minggu ke-${state.weeks} dari ${COMPOST_MATURE_WEEKS}` : "Belum mulai · ember belum ditutup"}</span>
               </dd>
             </div>
             <div className="sim-lab__metric--readiness">

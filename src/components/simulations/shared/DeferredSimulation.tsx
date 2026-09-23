@@ -12,7 +12,7 @@ type NetworkInformation = {
 
 const SLOW_CONNECTIONS = new Set(["slow-2g", "2g", "3g"]);
 
-// Berkas 3D-nya sekitar 240 KB terkompresi. Menagihkan itu hanya karena pembaca
+// Berkas 3D-nya sekitar 290 KB terkompresi. Menagihkan itu hanya karena pembaca
 // menggulir melewati simulasinya terasa mahal pada koneksi lambat atau saat
 // mode hemat data menyala, jadi pada kondisi tersebut pemuatannya menunggu
 // ketukan. Di koneksi lain perilakunya tetap seperti semula.
@@ -69,7 +69,7 @@ export function DeferredSimulation({ children, label }: DeferredSimulationProps)
             Mulai {label}
           </button>
           <p className="simulation-placeholder__note">
-            Perlu memuat sekitar 240 KB. Kami menunda pemuatannya karena koneksimu terbaca lambat atau mode hemat data sedang aktif.
+            Perlu memuat sekitar 290 KB. Kami menunda pemuatannya karena koneksimu terbaca lambat atau mode hemat data sedang aktif.
           </p>
         </div>
       </div>

@@ -1,550 +1,355 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
-  BoxGeometry,
-  CanvasTexture,
-  CircleGeometry,
+  BufferAttribute,
+  BufferGeometry,
   Color,
   CylinderGeometry,
   DoubleSide,
-  ExtrudeGeometry,
-  LinearFilter,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  PlaneGeometry,
-  RepeatWrapping,
-  Shape,
-  SRGBColorSpace,
+  TorusGeometry,
   type Group,
+  type Mesh,
 } from "three";
-import { WASTE_BIN_MOUTH_POSITION, type BinDefinition, type WasteCategory } from "./sortingBins";
+import { roundedPlateGeometry } from "../shared/geometry";
+import { once, plasticMaps, withRepeat } from "../shared/textures";
+import { binLabelTexture, lidEmblemTexture } from "./binLabel";
+import type { BinDefinition } from "./sortingBins";
+import { WasteObject } from "./WasteObject";
+import type { WasteShape } from "./wasteItems";
 
-function createBinBodyGeometry() {
-  const shape = new Shape();
-  shape.moveTo(-0.63, 0);
-  shape.quadraticCurveTo(-0.69, 0.02, -0.7, 0.12);
-  shape.lineTo(-0.77, 1.31);
-  shape.quadraticCurveTo(-0.78, 1.44, -0.65, 1.47);
-  shape.lineTo(0.65, 1.47);
-  shape.quadraticCurveTo(0.78, 1.44, 0.77, 1.31);
-  shape.lineTo(0.7, 0.12);
-  shape.quadraticCurveTo(0.69, 0.02, 0.63, 0);
-  shape.closePath();
+// Tong beroda 120 liter yang lazim di sekolah dan balai desa: badan plastik
+// cetak yang melebar ke atas, bibir tepi tebal, tutup berengsel di belakang,
+// dua roda karet, dan pegangan dorong. Satuan lokal: dasar di y = 0, mulut
+// sasaran lempar di sekitar y = 1,92 (WASTE_BIN_MOUTH_POSITION).
 
-  const geometry = new ExtrudeGeometry(shape, {
-    depth: 0.84,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    bevelSize: 0.035,
-    bevelThickness: 0.035,
-    curveSegments: 6,
-  });
-  geometry.translate(0, 0, -0.42);
-  return geometry;
+const BODY_BOTTOM = 0.16;
+const BODY_TOP = 1.66;
+const RIM_TOP = 1.735;
+
+function halfWidth(y: number) {
+  return 0.6 + (((y - BODY_BOTTOM) / (BODY_TOP - BODY_BOTTOM)) * 0.1);
 }
 
-function createRoundedLidGeometry() {
-  const width = 1.72;
-  const height = 1.02;
-  const radius = 0.13;
-  const x = -width / 2;
-  const y = -height / 2;
-  const shape = new Shape();
-  shape.moveTo(x + radius, y);
-  shape.lineTo(x + width - radius, y);
-  shape.quadraticCurveTo(x + width, y, x + width, y + radius);
-  shape.lineTo(x + width, y + height - radius);
-  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  shape.lineTo(x + radius, y + height);
-  shape.quadraticCurveTo(x, y + height, x, y + height - radius);
-  shape.lineTo(x, y + radius);
-  shape.quadraticCurveTo(x, y, x + radius, y);
-  shape.closePath();
-
-  const geometry = new ExtrudeGeometry(shape, {
-    depth: 0.11,
-    bevelEnabled: true,
-    bevelSegments: 2,
-    bevelSize: 0.035,
-    bevelThickness: 0.025,
-    curveSegments: 5,
-  });
-  geometry.rotateX(-Math.PI / 2);
-  return geometry;
+function halfDepth(y: number) {
+  return 0.46 + (((y - BODY_BOTTOM) / (BODY_TOP - BODY_BOTTOM)) * 0.085);
 }
 
-const BODY_GEOMETRY = createBinBodyGeometry();
-const LID_GEOMETRY = createRoundedLidGeometry();
-const FRONT_PANEL_GEOMETRY = new BoxGeometry(1.27, 0.91, 0.045, 2, 2, 1);
-const RIB_GEOMETRY = new BoxGeometry(0.045, 1.05, 0.035);
-const SLOT_SURROUND_GEOMETRY = new BoxGeometry(0.93, 0.025, 0.42);
-const SLOT_GEOMETRY = new BoxGeometry(0.75, 0.035, 0.27);
-const WHEEL_GEOMETRY = new CylinderGeometry(0.2, 0.2, 0.16, 22);
-const HUB_GEOMETRY = new CylinderGeometry(0.082, 0.082, 0.18, 18);
-const AXLE_GEOMETRY = new CylinderGeometry(0.045, 0.045, 1.22, 12);
-const HANDLE_POST_GEOMETRY = new CylinderGeometry(0.033, 0.033, 0.34, 10);
-const HANDLE_BAR_GEOMETRY = new CylinderGeometry(0.045, 0.045, 0.95, 12);
-const HINGE_GEOMETRY = new CylinderGeometry(0.065, 0.065, 1.05, 14);
-const LABEL_BACK_GEOMETRY = new BoxGeometry(1.29, 0.7, 0.045);
-const LABEL_GEOMETRY = new PlaneGeometry(1.23, 0.64);
-const PEDAL_GEOMETRY = new BoxGeometry(0.42, 0.08, 0.24);
-const DROP_TARGET_GEOMETRY = new BoxGeometry(1.48, 0.7, 1.12);
-const SHADOW_GEOMETRY = new CircleGeometry(0.78, 32);
+function cornerRadius(y: number) {
+  return 0.13 + (((y - BODY_BOTTOM) / (BODY_TOP - BODY_BOTTOM)) * 0.03);
+}
 
-const RUBBER_MATERIAL = new MeshStandardMaterial({
-  color: "#202522",
-  metalness: 0.02,
-  roughness: 0.96,
-});
+const CORNER_STEPS = 8;
 
-const HARDWARE_MATERIAL = new MeshStandardMaterial({
-  color: "#68706c",
-  metalness: 0.62,
-  roughness: 0.38,
-});
+function ringPoints(y: number, inset: number) {
+  const hw = Math.max(halfWidth(Math.min(y, BODY_TOP)) + inset, 0.05);
+  const hd = Math.max(halfDepth(Math.min(y, BODY_TOP)) + inset, 0.05);
+  const r = Math.max(cornerRadius(Math.min(y, BODY_TOP)) + inset, 0.01);
+  const corners: [number, number, number][] = [
+    [hw - r, hd - r, 0],
+    [-(hw - r), hd - r, Math.PI / 2],
+    [-(hw - r), -(hd - r), Math.PI],
+    [hw - r, -(hd - r), Math.PI * 1.5],
+  ];
+  const points: [number, number][] = [];
+  for (const [cx, cz, start] of corners) {
+    for (let step = 0; step <= CORNER_STEPS; step += 1) {
+      const angle = start + ((step / CORNER_STEPS) * (Math.PI / 2));
+      points.push([cx + (Math.cos(angle) * r), cz + (Math.sin(angle) * r)]);
+    }
+  }
+  return points;
+}
 
-const SLOT_MATERIAL = new MeshStandardMaterial({
-  color: "#101713",
-  metalness: 0.02,
-  roughness: 0.98,
-});
+// Profil dari luar bawah, naik, melewati bibir, lalu turun di sisi dalam.
+const PROFILE: [number, number][] = [
+  [BODY_BOTTOM, -0.05],
+  [BODY_BOTTOM + 0.03, -0.012],
+  [BODY_BOTTOM + 0.08, 0],
+  [BODY_TOP - 0.1, 0],
+  [BODY_TOP - 0.04, 0.012],
+  [BODY_TOP, 0.04],
+  [BODY_TOP + 0.045, 0.05],
+  [RIM_TOP, 0.03],
+  [RIM_TOP, -0.02],
+  [RIM_TOP - 0.03, -0.05],
+  [BODY_TOP - 0.1, -0.05],
+  [BODY_BOTTOM + 0.12, -0.05],
+  [BODY_BOTTOM + 0.07, -0.09],
+];
 
-const DROP_TARGET_MATERIAL = new MeshBasicMaterial({
-  colorWrite: false,
-  depthWrite: false,
-  opacity: 0,
-  transparent: true,
-});
+function bodyGeometry() {
+  return once("wheelie-bin-body", () => {
+    const rings = PROFILE.map(([y, inset]) => ringPoints(y, inset));
+    const perRing = rings[0].length;
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
 
-const SHADOW_MATERIAL = new MeshBasicMaterial({
-  color: "#284b3b",
-  depthWrite: false,
-  opacity: 0.2,
-  transparent: true,
-});
+    rings.forEach((ring, ringIndex) => {
+      const y = PROFILE[ringIndex][0];
+      let perimeter = 0;
+      ring.forEach(([x, z], index) => {
+        if (index > 0) perimeter += Math.hypot(x - ring[index - 1][0], z - ring[index - 1][1]);
+        positions.push(x, y, z);
+        uvs.push(perimeter / 4.6, y / 1.8);
+      });
+    });
 
-const LID_OPEN_ANGLE = -0.9;
+    for (let r = 0; r < rings.length - 1; r += 1) {
+      for (let index = 0; index < perRing; index += 1) {
+        const next = (index + 1) % perRing;
+        const a = (r * perRing) + index;
+        const b = (r * perRing) + next;
+        const c = ((r + 1) * perRing) + index;
+        const d = ((r + 1) * perRing) + next;
+        indices.push(a, c, b, b, c, d);
+      }
+    }
+
+    // Tutup dasar luar dan lantai dalam.
+    const bottomCenter = positions.length / 3;
+    positions.push(0, BODY_BOTTOM, 0);
+    uvs.push(0.5, 0);
+    for (let index = 0; index < perRing; index += 1) {
+      indices.push(bottomCenter, index, (index + 1) % perRing);
+    }
+    const lastRing = (rings.length - 1) * perRing;
+    const floorCenter = positions.length / 3;
+    positions.push(0, PROFILE[PROFILE.length - 1][0], 0);
+    uvs.push(0.5, 0.1);
+    for (let index = 0; index < perRing; index += 1) {
+      indices.push(floorCenter, lastRing + ((index + 1) % perRing), lastRing + index);
+    }
+
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
+    geometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  });
+}
+
+const LID_WIDTH = (halfWidth(BODY_TOP) * 2) + 0.14;
+const LID_DEPTH = (halfDepth(BODY_TOP) * 2) + 0.14;
+const HINGE_Z = -halfDepth(BODY_TOP) - 0.06;
+const HINGE_Y = RIM_TOP + 0.02;
+
+function lidGeometry() {
+  return once("wheelie-bin-lid", () => {
+    const geometry = roundedPlateGeometry(LID_WIDTH, LID_DEPTH, 0.075, 0.16);
+    geometry.rotateX(-Math.PI / 2);
+    return geometry;
+  });
+}
+
+function wheelGeometry() {
+  return once("wheelie-bin-wheel", () => {
+    const tire = new TorusGeometry(0.155, 0.062, 12, 28);
+    tire.rotateY(Math.PI / 2);
+    const hub = new CylinderGeometry(0.105, 0.105, 0.1, 20);
+    hub.rotateZ(Math.PI / 2);
+    return { tire, hub };
+  });
+}
+
+const RUBBER = () => once("bin-rubber", () => new MeshStandardMaterial({ color: "#1f2321", roughness: 0.92 }));
+const HUB = () => once("bin-hub", () => new MeshStandardMaterial({ color: "#6b726e", metalness: 0.3, roughness: 0.5 }));
+const METAL = () => once("bin-metal", () => new MeshStandardMaterial({ color: "#8d9591", metalness: 0.75, roughness: 0.35 }));
+
+const LID_OPEN = -1.2;
 const SHAKE_DURATION = 0.58;
 
 export type IndonesianWasteBinProps = {
   definition: BinDefinition;
-  position: [number, number, number];
   highlighted: boolean;
   wrong: boolean;
+  open?: boolean;
+  contents?: readonly WasteShape[];
   reducedMotion: boolean;
 };
 
-function roundedRectangle(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number,
-) {
-  const safeRadius = Math.min(radius, width / 2, height / 2);
-  context.beginPath();
-  context.moveTo(x + safeRadius, y);
-  context.lineTo(x + width - safeRadius, y);
-  context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
-  context.lineTo(x + width, y + height - safeRadius);
-  context.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
-  context.lineTo(x + safeRadius, y + height);
-  context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
-  context.lineTo(x, y + safeRadius);
-  context.quadraticCurveTo(x, y, x + safeRadius, y);
-  context.closePath();
-}
-
-function drawArrowHead(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  angle: number,
-  size: number,
-) {
-  context.beginPath();
-  context.moveTo(x, y);
-  context.lineTo(
-    x - Math.cos(angle - Math.PI / 5) * size,
-    y - Math.sin(angle - Math.PI / 5) * size,
-  );
-  context.lineTo(
-    x - Math.cos(angle + Math.PI / 5) * size,
-    y - Math.sin(angle + Math.PI / 5) * size,
-  );
-  context.closePath();
-  context.fill();
-}
-
-function drawPictogram(
-  context: CanvasRenderingContext2D,
-  category: WasteCategory,
-  x: number,
-  y: number,
-  size: number,
-  color: string,
-) {
-  context.save();
-  context.strokeStyle = color;
-  context.fillStyle = color;
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.lineWidth = size * 0.095;
-
-  if (category === "hazardous") {
-    context.beginPath();
-    context.moveTo(x, y - size * 0.48);
-    context.lineTo(x + size * 0.48, y + size * 0.42);
-    context.lineTo(x - size * 0.48, y + size * 0.42);
-    context.closePath();
-    context.stroke();
-    context.beginPath();
-    context.moveTo(x, y - size * 0.18);
-    context.lineTo(x, y + size * 0.13);
-    context.stroke();
-    context.beginPath();
-    context.arc(x, y + size * 0.28, size * 0.055, 0, Math.PI * 2);
-    context.fill();
-  } else if (category === "organic") {
-    context.beginPath();
-    context.ellipse(x, y, size * 0.34, size * 0.49, Math.PI / 4, 0, Math.PI * 2);
-    context.stroke();
-    context.beginPath();
-    context.moveTo(x - size * 0.27, y + size * 0.3);
-    context.lineTo(x + size * 0.28, y - size * 0.28);
-    context.stroke();
-    context.beginPath();
-    context.moveTo(x - size * 0.03, y + size * 0.04);
-    context.lineTo(x - size * 0.28, y - size * 0.02);
-    context.moveTo(x + size * 0.09, y - size * 0.08);
-    context.lineTo(x + size * 0.06, y - size * 0.31);
-    context.stroke();
-  } else if (category === "reusable") {
-    roundedRectangle(context, x - size * 0.2, y - size * 0.3, size * 0.4, size * 0.62, size * 0.08);
-    context.stroke();
-    context.beginPath();
-    context.arc(x, y, size * 0.48, -Math.PI * 0.65, Math.PI * 0.55);
-    context.stroke();
-    drawArrowHead(context, x - size * 0.08, y + size * 0.47, Math.PI * 0.54, size * 0.2);
-  } else if (category === "recyclable") {
-    const radius = size * 0.38;
-    for (let index = 0; index < 3; index += 1) {
-      const start = -Math.PI / 2 + index * (Math.PI * 2 / 3);
-      const end = start + Math.PI * 0.48;
-      context.beginPath();
-      context.arc(x, y, radius, start, end);
-      context.stroke();
-      drawArrowHead(
-        context,
-        x + Math.cos(end) * radius,
-        y + Math.sin(end) * radius,
-        end + Math.PI / 2,
-        size * 0.17,
-      );
-    }
-  } else {
-    context.beginPath();
-    context.moveTo(x - size * 0.3, y - size * 0.24);
-    context.quadraticCurveTo(x, y - size * 0.43, x + size * 0.3, y - size * 0.24);
-    context.lineTo(x + size * 0.24, y + size * 0.4);
-    context.quadraticCurveTo(x, y + size * 0.5, x - size * 0.24, y + size * 0.4);
-    context.closePath();
-    context.stroke();
-    context.beginPath();
-    context.moveTo(x - size * 0.13, y - size * 0.34);
-    context.lineTo(x + size * 0.13, y - size * 0.34);
-    context.stroke();
-  }
-
-  context.restore();
-}
-
-function fitLabelText(context: CanvasRenderingContext2D, value: string, maxWidth: number) {
-  let fontSize = 118;
-  do {
-    context.font = `850 ${fontSize}px Inter, Arial, sans-serif`;
-    fontSize -= 1;
-  } while (context.measureText(value).width > maxWidth && fontSize > 58);
-}
-
-function createLabelTexture(definition: BinDefinition) {
-  const density = 2;
-  const logicalWidth = 768;
-  const logicalHeight = 384;
-  const canvas = document.createElement("canvas");
-  canvas.width = logicalWidth * density;
-  canvas.height = logicalHeight * density;
-  const context = canvas.getContext("2d");
-
-  if (!context) return new CanvasTexture(canvas);
-
-  context.scale(density, density);
-  roundedRectangle(context, 8, 8, logicalWidth - 16, logicalHeight - 16, 34);
-  context.fillStyle = "#fffef9";
-  context.fill();
-  context.lineWidth = 12;
-  context.strokeStyle = definition.color;
-  context.stroke();
-
-  const labelInk = new Color(definition.color).offsetHSL(0, 0.02, -0.2).getStyle();
-  roundedRectangle(context, 28, 28, 164, 328, 24);
-  context.fillStyle = new Color(definition.color).offsetHSL(0, -0.02, 0.38).getStyle();
-  context.fill();
-  drawPictogram(context, definition.category, 110, 192, 104, labelInk);
-
-  context.fillStyle = labelInk;
-  context.textBaseline = "middle";
-  const labelLines = definition.shortLabel.toUpperCase().split(" ");
-  if (labelLines.length === 1) {
-    fitLabelText(context, labelLines[0], 536);
-    context.fillText(labelLines[0], 210, 192);
-  } else {
-    labelLines.slice(0, 2).forEach((line, index) => {
-      fitLabelText(context, line, 536);
-      context.fillText(line, 210, 132 + (index * 120));
-    });
-  }
-
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.magFilter = LinearFilter;
-  texture.minFilter = LinearFilter;
-  texture.generateMipmaps = false;
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function createPlasticTexture(color: string) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 256;
-  const context = canvas.getContext("2d");
-  if (!context) return new CanvasTexture(canvas);
-
-  context.fillStyle = color;
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  const base = new Color(color);
-  for (let index = 0; index < 420; index += 1) {
-    const x = (index * 71) % 256;
-    const y = (index * 137) % 256;
-    const lightness = index % 3 === 0 ? 0.08 : -0.06;
-    context.fillStyle = base.clone().offsetHSL(0, -0.015, lightness).getStyle();
-    const size = 0.6 + ((index * 17) % 12) / 10;
-    context.fillRect(x, y, size, size);
-  }
-
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
-  texture.repeat.set(2.5, 2.5);
-  texture.magFilter = LinearFilter;
-  texture.minFilter = LinearFilter;
-  texture.generateMipmaps = false;
-  texture.needsUpdate = true;
-  return texture;
-}
-
 function damp(current: number, target: number, speed: number, delta: number) {
-  return current + (target - current) * (1 - Math.exp(-speed * delta));
+  return current + ((target - current) * (1 - Math.exp(-speed * delta)));
 }
+
+// Isi tong menumpuk sampai dekat bibir. Saat tutup terbuka tumpukannya
+// terangkat sedikit sehingga terlihat dari kamera; saat tertutup ia turun
+// supaya tidak menembus tutup.
+const CONTENT_SPOTS: [number, number, number, number][] = [
+  [-0.2, 1.56, 0.06, 0.3],
+  [0.2, 1.6, -0.1, 1.4],
+  [0.02, 1.68, 0.14, 2.2],
+  [-0.1, 1.72, -0.14, 3.4],
+];
 
 export function IndonesianWasteBin({
   definition,
-  position,
   highlighted,
   wrong,
+  open = false,
+  contents = [],
   reducedMotion,
 }: IndonesianWasteBinProps) {
-  const animatedGroupRef = useRef<Group>(null);
+  const animatedRef = useRef<Group>(null);
   const lidRef = useRef<Group>(null);
-  const wrongElapsedRef = useRef(0);
-  const { gl, invalidate } = useThree();
+  const bodyRef = useRef<Mesh>(null);
+  const glowRef = useRef<Mesh>(null);
+  const contentsRef = useRef<Group>(null);
+  const wrongElapsed = useRef(SHAKE_DURATION);
+  const glowLevel = useRef(0);
+  const { invalidate } = useThree();
 
-  const labelTexture = useMemo(() => {
-    const texture = createLabelTexture(definition);
-    texture.anisotropy = Math.min(16, gl.capabilities.getMaxAnisotropy());
-    return texture;
-  }, [definition, gl]);
-  const plasticTexture = useMemo(() => {
-    const texture = createPlasticTexture(definition.color);
-    texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy());
-    return texture;
-  }, [definition.color, gl]);
-  const emissiveColor = wrong ? "#a51e16" : highlighted ? definition.color : "#000000";
-  const emissiveIntensity = wrong ? 0.55 : highlighted ? 0.28 : 0;
-  const bodyMaterial = useMemo(
-    () => new MeshPhysicalMaterial({
-      color: "#ffffff",
-      map: plasticTexture,
-      emissive: emissiveColor,
-      emissiveIntensity,
-      clearcoat: 0.16,
-      clearcoatRoughness: 0.72,
-      metalness: 0.01,
-      roughness: 0.78,
-    }),
-    [emissiveColor, emissiveIntensity, plasticTexture],
-  );
-  const accentMaterial = useMemo(() => {
-    const accentColor = new Color(definition.color).offsetHSL(0, 0.01, -0.09);
-    return new MeshPhysicalMaterial({
-      color: accentColor,
-      emissive: emissiveColor,
-      emissiveIntensity,
-      clearcoat: 0.22,
-      clearcoatRoughness: 0.62,
-      metalness: 0.01,
-      roughness: 0.69,
-    });
-  }, [definition.color, emissiveColor, emissiveIntensity]);
-  const labelBackMaterial = useMemo(
-    () => new MeshStandardMaterial({
-      color: new Color(definition.color).offsetHSL(0, 0.01, -0.14),
-      roughness: 0.72,
-    }),
-    [definition.color],
-  );
-  const slotSurroundMaterial = useMemo(
-    () => new MeshBasicMaterial({
-      color: highlighted ? "#f4ffd2" : definition.color,
-      opacity: highlighted ? 0.96 : 0.34,
-      side: DoubleSide,
-      transparent: true,
-      toneMapped: false,
-    }),
-    [definition.color, highlighted],
-  );
-  const labelMaterial = useMemo(
-    () => new MeshBasicMaterial({ map: labelTexture, transparent: true, toneMapped: false }),
-    [labelTexture],
-  );
+  const plastic = useMemo(() => withRepeat(plasticMaps(), 2, 1.4), []);
+  const bodyMaterial = useMemo(() => new MeshPhysicalMaterial({
+    ...plastic,
+    clearcoat: 0.3,
+    clearcoatRoughness: 0.45,
+    color: definition.color,
+    side: DoubleSide,
+  }), [definition.color, plastic]);
+  const lidMaterial = useMemo(() => new MeshPhysicalMaterial({
+    ...plastic,
+    clearcoat: 0.35,
+    clearcoatRoughness: 0.4,
+    color: new Color(definition.color).offsetHSL(0, 0.02, -0.08),
+  }), [definition.color, plastic]);
+  const glowMaterial = useMemo(() => new MeshBasicMaterial({
+    color: definition.color,
+    depthWrite: false,
+    opacity: 0,
+    toneMapped: false,
+    transparent: true,
+  }), [definition.color]);
+
+  useEffect(() => () => {
+    bodyMaterial.dispose();
+    lidMaterial.dispose();
+    glowMaterial.dispose();
+  }, [bodyMaterial, glowMaterial, lidMaterial]);
 
   useEffect(() => {
-    if (wrong) wrongElapsedRef.current = 0;
+    if (wrong) wrongElapsed.current = 0;
     invalidate();
-  }, [highlighted, invalidate, reducedMotion, wrong]);
-
-  useEffect(
-    () => () => {
-      bodyMaterial.dispose();
-      accentMaterial.dispose();
-      labelBackMaterial.dispose();
-      slotSurroundMaterial.dispose();
-    }, [accentMaterial, bodyMaterial, labelBackMaterial, slotSurroundMaterial],
-  );
-
-  useEffect(
-    () => () => {
-      labelMaterial.dispose();
-      labelTexture.dispose();
-      plasticTexture.dispose();
-    }, [labelMaterial, labelTexture, plasticTexture],
-  );
+  }, [highlighted, invalidate, open, reducedMotion, wrong]);
 
   useFrame((_, delta) => {
-    const animatedGroup = animatedGroupRef.current;
+    const animated = animatedRef.current;
     const lid = lidRef.current;
-    if (!animatedGroup || !lid) return;
-
-    const targetLidRotation = highlighted ? LID_OPEN_ANGLE : 0;
-    let needsAnotherFrame = false;
+    const body = bodyRef.current;
+    const glow = glowRef.current;
+    if (!animated || !lid || !body || !glow) return;
+    const dt = Math.min(delta, 0.05);
+    const targetLid = highlighted || open ? LID_OPEN : 0;
+    const targetGlow = wrong ? 1 : highlighted ? 1 : 0;
+    let busy = false;
 
     if (reducedMotion) {
-      lid.rotation.x = targetLidRotation;
-      animatedGroup.position.x = 0;
+      lid.rotation.x = targetLid;
+      animated.position.x = 0;
+      glowLevel.current = targetGlow;
     } else {
-      lid.rotation.x = damp(lid.rotation.x, targetLidRotation, 11, delta);
-      if (Math.abs(lid.rotation.x - targetLidRotation) > 0.001) needsAnotherFrame = true;
-
-      if (wrong && wrongElapsedRef.current < SHAKE_DURATION) {
-        wrongElapsedRef.current = Math.min(SHAKE_DURATION, wrongElapsedRef.current + delta);
-        const progress = wrongElapsedRef.current / SHAKE_DURATION;
-        animatedGroup.position.x = Math.sin(progress * Math.PI * 8) * (1 - progress) * 0.13;
-        needsAnotherFrame = progress < 1;
+      lid.rotation.x = damp(lid.rotation.x, targetLid, 10, dt);
+      glowLevel.current = damp(glowLevel.current, targetGlow, 12, dt);
+      busy = Math.abs(lid.rotation.x - targetLid) > 0.001 || Math.abs(glowLevel.current - targetGlow) > 0.002;
+      if (wrong && wrongElapsed.current < SHAKE_DURATION) {
+        wrongElapsed.current = Math.min(SHAKE_DURATION, wrongElapsed.current + dt);
+        const progress = wrongElapsed.current / SHAKE_DURATION;
+        animated.position.x = Math.sin(progress * Math.PI * 8) * (1 - progress) * 0.12;
+        busy = true;
       } else {
-        animatedGroup.position.x = damp(animatedGroup.position.x, 0, 16, delta);
-        if (Math.abs(animatedGroup.position.x) > 0.001) needsAnotherFrame = true;
+        animated.position.x = damp(animated.position.x, 0, 16, dt);
+        if (Math.abs(animated.position.x) > 0.001) busy = true;
       }
     }
 
-    if (needsAnotherFrame) invalidate();
+    const material = body.material as MeshPhysicalMaterial;
+    material.emissive.set(wrong ? "#b3261b" : definition.color);
+    material.emissiveIntensity = glowLevel.current * (wrong ? 0.45 : 0.22);
+    if (contentsRef.current) contentsRef.current.position.y = ((lid.rotation.x / LID_OPEN) - 1) * 0.42;
+    const ring = glow.material as MeshBasicMaterial;
+    ring.color.set(wrong ? "#d8453a" : definition.color);
+    ring.opacity = glowLevel.current * 0.6;
+    glow.visible = glowLevel.current > 0.01;
+    if (busy) invalidate();
   });
 
+  const labelY = 0.98;
+  const labelSlope = Math.atan((halfDepth(BODY_TOP) - halfDepth(BODY_BOTTOM)) / (BODY_TOP - BODY_BOTTOM));
+  const { tire, hub } = wheelGeometry();
+  const wheelX = halfWidth(0.2) + 0.04;
+  const wheelZ = -halfDepth(0.2) + 0.06;
+
   return (
-    <group
-      dispose={null}
-      name={`waste-bin-${definition.category}`}
-      position={position}
-      userData={{ category: definition.category }}
-    >
-      <mesh
-        geometry={SHADOW_GEOMETRY}
-        material={SHADOW_MATERIAL}
-        position={[0, 0.045, 0.03]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        scale={[1.18, 0.68, 1]}
-      />
-      <group ref={animatedGroupRef}>
-        <mesh geometry={BODY_GEOMETRY} material={bodyMaterial} position={[0, 0.16, 0]} />
+    <group dispose={null} name={`waste-bin-${definition.category}`} userData={{ category: definition.category }}>
+      <mesh position={[0, 0.02, 0]} ref={glowRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+        <ringGeometry args={[0.92, 1.12, 48]} />
+        <primitive attach="material" object={glowMaterial} />
+      </mesh>
 
-        <mesh geometry={FRONT_PANEL_GEOMETRY} material={bodyMaterial} position={[0, 0.91, 0.468]} />
-        {[-0.64, 0.64].map((x) => (
-          <mesh key={x} geometry={RIB_GEOMETRY} material={accentMaterial} position={[x, 0.94, 0.493]} />
+      <group ref={animatedRef}>
+        <mesh castShadow geometry={bodyGeometry()} material={bodyMaterial} ref={bodyRef} receiveShadow />
+
+        {/* Pita penguat di bawah bibir dan kaki depan. */}
+        {[-1, 1].map((side) => (
+          <mesh castShadow key={side} material={bodyMaterial} position={[side * 0.36, 0.08, halfDepth(0.2) - 0.08]}>
+            <boxGeometry args={[0.22, 0.16, 0.14]} />
+          </mesh>
         ))}
-        <mesh geometry={LABEL_BACK_GEOMETRY} material={labelBackMaterial} position={[0, 0.92, 0.505]} />
-        <mesh geometry={LABEL_GEOMETRY} material={labelMaterial} position={[0, 0.92, 0.532]} />
 
-        <mesh
-          geometry={AXLE_GEOMETRY}
-          material={HARDWARE_MATERIAL}
-          position={[0, 0.22, -0.39]}
-          rotation={[0, 0, Math.PI / 2]}
-        />
-        {[-0.72, 0.72].map((x) => (
-          <group key={x} position={[x, 0.22, -0.39]} rotation={[0, 0, Math.PI / 2]}>
-            <mesh geometry={WHEEL_GEOMETRY} material={RUBBER_MATERIAL} />
-            <mesh geometry={HUB_GEOMETRY} material={HARDWARE_MATERIAL} position={[0, 0.015, 0]} />
+        <mesh position={[0, labelY, halfDepth(labelY) + 0.005]} rotation={[labelSlope, 0, 0]}>
+          <planeGeometry args={[1.02, 0.595]} />
+          <meshStandardMaterial map={binLabelTexture(definition)} polygonOffset polygonOffsetFactor={-2} roughness={0.5} />
+        </mesh>
+
+        {/* Roda dan poros di belakang. */}
+        <mesh material={METAL()} position={[0, 0.2, wheelZ]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.035, 0.035, (wheelX * 2) + 0.1, 10]} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <group key={side} position={[side * wheelX, 0.21, wheelZ]}>
+            <mesh castShadow geometry={tire} material={RUBBER()} />
+            <mesh geometry={hub} material={HUB()} />
           </group>
         ))}
 
-        {[-0.45, 0.45].map((x) => (
-          <mesh
-            key={x}
-            geometry={HANDLE_POST_GEOMETRY}
-            material={HARDWARE_MATERIAL}
-            position={[x, 1.47, -0.42]}
-          />
+        {/* Pegangan dorong yang sekaligus menjadi engsel tutup. */}
+        <mesh castShadow material={RUBBER()} position={[0, HINGE_Y - 0.06, HINGE_Z - 0.06]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.045, 0.045, LID_WIDTH * 0.72, 14]} />
+        </mesh>
+        {[-1, 1].map((side) => (
+          <mesh castShadow key={side} material={bodyMaterial} position={[side * LID_WIDTH * 0.34, HINGE_Y - 0.1, HINGE_Z - 0.01]}>
+            <boxGeometry args={[0.08, 0.16, 0.12]} />
+          </mesh>
         ))}
-        <mesh
-          geometry={HANDLE_BAR_GEOMETRY}
-          material={RUBBER_MATERIAL}
-          position={[0, 1.62, -0.42]}
-          rotation={[0, 0, Math.PI / 2]}
-        />
-        <mesh
-          geometry={PEDAL_GEOMETRY}
-          material={HARDWARE_MATERIAL}
-          position={[0, 0.12, 0.53]}
-          rotation={[-0.2, 0, 0]}
-        />
 
-        <group ref={lidRef} position={[0, 1.65, -0.47]}>
-          <mesh geometry={HINGE_GEOMETRY} material={HARDWARE_MATERIAL} rotation={[0, 0, Math.PI / 2]} />
-          <mesh geometry={LID_GEOMETRY} material={accentMaterial} position={[0, 0.02, 0.43]} />
-          <mesh geometry={SLOT_SURROUND_GEOMETRY} material={slotSurroundMaterial} position={[0, 0.17, 0.48]} />
-          <mesh geometry={SLOT_GEOMETRY} material={SLOT_MATERIAL} position={[0, 0.19, 0.48]} />
+        <group position={[0, HINGE_Y, HINGE_Z]} ref={lidRef}>
+          <mesh castShadow geometry={lidGeometry()} material={lidMaterial} position={[0, 0.02, (LID_DEPTH / 2) - 0.03]} receiveShadow />
+          <mesh castShadow material={lidMaterial} position={[0, -0.04, LID_DEPTH - 0.05]}>
+            <boxGeometry args={[LID_WIDTH * 0.62, 0.1, 0.05]} />
+          </mesh>
+          <mesh material={RUBBER()} position={[0, -0.02, LID_DEPTH - 0.01]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.03, 0.03, LID_WIDTH * 0.4, 10]} />
+          </mesh>
+          <mesh position={[0, 0.062, (LID_DEPTH / 2) - 0.02]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[0.52, 0.52]} />
+            <meshStandardMaterial depthWrite={false} map={lidEmblemTexture(definition.category)} opacity={0.4} polygonOffset polygonOffsetFactor={-2} transparent />
+          </mesh>
         </group>
 
-        <mesh
-          geometry={DROP_TARGET_GEOMETRY}
-          material={DROP_TARGET_MATERIAL}
-          name={`waste-bin-drop-target-${definition.category}`}
-          position={WASTE_BIN_MOUTH_POSITION}
-          userData={{ category: definition.category, isWasteBinDropTarget: true }}
-        />
+        <group position={[0, -0.42, 0]} ref={contentsRef}>
+          {contents.slice(-CONTENT_SPOTS.length).map((shape, index) => {
+            const [x, y, z, turn] = CONTENT_SPOTS[index];
+            return (
+              <group key={`${shape}-${index}`} position={[x, y, z]} rotation={[0.3, turn, 0.2]} scale={0.5}>
+                <WasteObject shape={shape} />
+              </group>
+            );
+          })}
+        </group>
       </group>
     </group>
   );

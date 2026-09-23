@@ -5,6 +5,9 @@ export type ProductState = {
   hasLabel: boolean;
   hasInfo: boolean;
   price: number;
+  // Berapa kali lapak sudah dibuka dengan susunan produk yang sekarang. Kembali
+  // ke 0 setiap kali kemasan, label, keterangan, atau harga diubah.
+  marketDay: number;
   actionId: number;
 };
 
@@ -41,7 +44,7 @@ export const CONTAINERS: Record<Container, {
 export const LABEL_COST = 600;
 
 export function createInitialProductState(): ProductState {
-  return { container: "pouch", hasLabel: false, hasInfo: false, price: 9000, actionId: 0 };
+  return { container: "pouch", hasLabel: false, hasInfo: false, price: 9000, marketDay: 0, actionId: 0 };
 }
 
 export type ProductEvaluation = {
@@ -180,4 +183,45 @@ export function evaluateProduct(state: ProductState): ProductEvaluation {
     message: `${container.label} sudah berlabel, keterangannya jujur, dan untungnya ${marginShare}% dari harga jual.`,
     nextAction: "Coba tawarkan pada bazar atau toko pertanian, lalu catat tanggapan pembeli.",
   };
+}
+
+export const MARKET_BUYERS = 10;
+
+export type MarketDay = {
+  sold: number;
+  revenue: number;
+  profit: number;
+  success: boolean;
+  headline: string;
+  reasons: string[];
+};
+
+// Satu hari lapak di bazar dengan sepuluh calon pembeli. Peluang membeli naik
+// kalau produknya berlabel, keterangannya jujur, dan harganya masuk kisaran
+// nyaman. Hasilnya dibuat pasti (tanpa acak) supaya anak bisa membandingkan
+// satu pilihan dengan pilihan lain secara adil.
+export function simulateMarketDay(state: ProductState): MarketDay {
+  const evaluation = evaluateProduct(state);
+  const container = CONTAINERS[state.container];
+  const chance = clamp(12 + (evaluation.trustScore * 0.45) + (evaluation.appealScore * 0.43)) / 100;
+  const sold = Math.round(MARKET_BUYERS * chance);
+  const revenue = sold * state.price;
+  const profit = sold * evaluation.margin;
+  const reasons: string[] = [];
+
+  if (!state.hasLabel) reasons.push("Tanpa label, pembeli sulit mengenali produk dan usahamu.");
+  if (!state.hasInfo) reasons.push("Tanpa keterangan komposisi dan cara pakai, sebagian pembeli ragu.");
+  if (state.price > container.sweetSpot.max) reasons.push("Sebagian pembeli batal karena harganya terasa kemahalan.");
+  if (state.price < container.sweetSpot.min) reasons.push("Harga yang terlalu murah membuat pembeli meragukan mutunya.");
+  if (evaluation.margin <= 0) reasons.push("Produknya laku, tetapi setiap penjualan justru rugi karena harga di bawah biaya.");
+  else if (evaluation.marginShare < 20) reasons.push("Untung per produk terlalu tipis untuk menutup waktu dan tenaga.");
+
+  const success = sold >= 7 && profit > 0 && evaluation.marginShare >= 20;
+  const headline = success
+    ? `${sold} dari ${MARKET_BUYERS} pembeli membeli produkmu`
+    : sold >= 7
+      ? `${sold} dari ${MARKET_BUYERS} pembeli membeli, tetapi untungnya belum sehat`
+      : `Hanya ${sold} dari ${MARKET_BUYERS} pembeli yang membeli`;
+
+  return { sold, revenue, profit, success, headline, reasons };
 }

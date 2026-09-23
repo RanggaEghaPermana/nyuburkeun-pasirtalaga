@@ -1,14 +1,6 @@
 import { useId, type ReactNode } from "react";
-import { Canvas } from "@react-three/fiber";
+import { LabCanvas } from "./LabCanvas";
 import { SimulationErrorBoundary } from "./SimulationErrorBoundary";
-
-const DPR: [number, number] = [1, 1.5];
-
-const GL_OPTIONS = {
-  alpha: true,
-  antialias: true,
-  powerPreference: "low-power" as const,
-};
 
 export type ShellIds = {
   titleId: string;
@@ -66,15 +58,12 @@ export function SimulationShell({
               <SimulationErrorBoundary
                 fallback={<div className="sim-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
               >
-                <Canvas
+                <LabCanvas
                   camera={camera}
-                  dpr={DPR}
                   fallback={<div className="sim-lab__webgl-fallback">Visual 3D tidak dapat dimuat.</div>}
-                  frameloop="demand"
-                  gl={GL_OPTIONS}
                 >
                   {scene}
-                </Canvas>
+                </LabCanvas>
               </SimulationErrorBoundary>
             </div>
           ) : (

@@ -5,7 +5,9 @@ export type CompostCondition =
   | "too-wet"
   | "too-dry"
   | "needs-air"
-  | "balanced";
+  | "balanced"
+  | "composting"
+  | "mature";
 
 export type CompostTone = "neutral" | "attention" | "success";
 
@@ -25,11 +27,13 @@ export type CompostLastAction =
   | CompostMaterial
   | "water"
   | "mix"
+  | "wait"
   | "reset";
 
 export type CompostMixReport = {
   sequence: number;
   layersMixed: number;
+  mixedBefore: number;
   moistureBefore: number;
   moistureAfter: number;
   aerationBefore: number;
@@ -46,6 +50,9 @@ export type CompostState = {
   batches: CompostBatch[];
   mixedThrough: number;
   waterCount: number;
+  // Minggu pengomposan sejak ember ditutup. Selama berjalan, bahan baru tidak
+  // ditambahkan; campuran cukup dijaga udara dan kelembapannya.
+  weeks: number;
   actionId: number;
   lastAction: CompostLastAction | null;
   lastMixReport: CompostMixReport | null;
@@ -66,8 +73,13 @@ export type CompostEvaluation = {
   ratioScore: number;
   moistureScore: number;
   aerationScore: number;
+  canWait: boolean;
+  composting: boolean;
+  mature: boolean;
 };
 
+export const COMPOST_MATURE_WEEKS = 6;
+export const COMPOST_WEEK_STEP = 2;
 const DRY_LIMIT = 35;
 const WET_LIMIT = 70;
 const MINIMUM_BROWN_TO_GREEN_RATIO = 1.5;
@@ -84,6 +96,7 @@ export function createInitialCompostState(): CompostState {
     batches: [],
     mixedThrough: 0,
     waterCount: 0,
+    weeks: 0,
     actionId: 0,
     lastAction: null,
     lastMixReport: null,
@@ -159,6 +172,8 @@ function describeAeration(aeration: number): string {
 
 function describeStructure(state: CompostState): string {
   if (state.batches.length === 0) return "Belum ada campuran";
+  if (state.weeks >= COMPOST_MATURE_WEEKS) return "Remah, gelap, bentuk bahan asal tidak terlihat";
+  if (state.weeks > 0) return `Mulai terurai · minggu ke-${state.weeks}`;
 
   const unmixedLayers = Math.max(0, state.batches.length - state.mixedThrough);
   if (state.mixed && unmixedLayers === 0) return "Tercampur merata";
@@ -176,7 +191,18 @@ export function evaluateCompost(state: CompostState): CompostEvaluation {
   const readinessScore = totalMaterials === 0
     ? 0
     : clampScore(ratioScore * 0.4 + moistureScore * 0.3 + aerationScore * 0.3);
+  const composting = state.weeks > 0;
+  const mature = state.weeks >= COMPOST_MATURE_WEEKS;
+  const moistureOk = state.moisture >= DRY_LIMIT && state.moisture <= WET_LIMIT;
+  const ratioOk = state.greens > 0
+    && state.browns / state.greens >= MINIMUM_BROWN_TO_GREEN_RATIO
+    && state.browns / state.greens <= MAXIMUM_BROWN_TO_GREEN_RATIO;
+  const aired = state.mixed && state.mixedThrough >= state.batches.length && state.aeration >= 65;
+  const canWait = !mature && ratioOk && moistureOk && (composting ? state.aeration >= 55 : aired);
   const sharedMetrics = {
+    canWait,
+    composting,
+    mature,
     balanceLabel,
     moistureLabel,
     aerationLabel: describeAeration(state.aeration),
@@ -186,6 +212,66 @@ export function evaluateCompost(state: CompostState): CompostEvaluation {
     moistureScore,
     aerationScore,
   };
+
+  if (mature) {
+    return {
+      condition: "mature",
+      title: "Komposnya sudah matang!",
+      message: "Setelah sekitar enam minggu, campurannya menyusut, berwarna gelap, remah, dan berbau seperti tanah. Bentuk sayur dan daun asalnya sudah tidak terlihat.",
+      nextAction: "Ayak kompos matang lalu campurkan dengan tanah. Jangan dipakai sebagai satu-satunya isi pot.",
+      tone: "success",
+      isBalanced: true,
+      ...sharedMetrics,
+    };
+  }
+
+  if (composting) {
+    if (state.moisture < DRY_LIMIT) {
+      return {
+        condition: "too-dry",
+        title: "Kompos mulai mengering",
+        message: `Minggu ke-${state.weeks}. Panas dari penguraian membuat air menguap, dan pengurai berhenti bekerja kalau terlalu kering.`,
+        nextAction: "Siram sedikit sampai lembap seperti spons yang diperas.",
+        tone: "attention",
+        isBalanced: false,
+        ...sharedMetrics,
+      };
+    }
+
+    if (state.moisture > WET_LIMIT) {
+      return {
+        condition: "too-wet",
+        title: "Kompos terlalu basah",
+        message: `Minggu ke-${state.weeks}. Air berlebih menutup rongga udara sehingga kompos bisa berbau.`,
+        nextAction: "Aduk agar air menyebar dan udara masuk kembali.",
+        tone: "attention",
+        isBalanced: false,
+        ...sharedMetrics,
+      };
+    }
+
+    if (state.aeration < 55) {
+      return {
+        condition: "needs-air",
+        title: "Saatnya diaduk lagi",
+        message: `Minggu ke-${state.weeks}. Campuran memadat dan udara di dalamnya mulai habis dipakai makhluk pengurai.`,
+        nextAction: "Aduk dengan sekop kecil supaya udara masuk kembali.",
+        tone: "neutral",
+        isBalanced: false,
+        ...sharedMetrics,
+      };
+    }
+
+    return {
+      condition: "composting",
+      title: "Pengomposan berjalan",
+      message: `Minggu ke-${state.weeks} dari ${COMPOST_MATURE_WEEKS}. Bagian tengah menghangat dan bahan mulai hancur. Uap tipis itu tanda pengurai sedang bekerja.`,
+      nextAction: `Tutup ember dan tunggu ${COMPOST_WEEK_STEP} minggu lagi. Aduk setiap kali udaranya berkurang.`,
+      tone: "success",
+      isBalanced: true,
+      ...sharedMetrics,
+    };
+  }
 
   if (totalMaterials === 0) {
     return {
@@ -277,7 +363,7 @@ export function evaluateCompost(state: CompostState): CompostEvaluation {
     condition: "balanced",
     title: "Campuranmu sudah pas!",
     message: "Jumlah bahan, air, dan udaranya sudah cocok untuk mulai membuat kompos.",
-    nextAction: "Terus periksa bau, panas, dan kelembapannya.",
+    nextAction: `Tutup ember lalu tunggu ${COMPOST_WEEK_STEP} minggu. Kompos rumahan biasanya matang dalam 30 sampai 60 hari.`,
     tone: "success",
     isBalanced: true,
     ...sharedMetrics,

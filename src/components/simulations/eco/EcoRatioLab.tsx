@@ -5,12 +5,14 @@ import { useWebGLSupport } from "../shared/useWebGLSupport";
 import { useReducedMotion } from "../shared/useReducedMotion";
 import { EcoRatioScene } from "./EcoRatioScene";
 import {
+  ECO_BULGE_PRESSURE,
   ECO_CAPACITY,
   ECO_DAY_STEP,
   ECO_FERMENT_DAYS,
   ECO_LIMITS,
   createInitialEcoState,
   evaluateEcoRatio,
+  pressureGain,
   type EcoState,
 } from "./evaluateEcoRatio";
 
@@ -19,8 +21,10 @@ type EcoIngredient = "sugar" | "scraps" | "water";
 type EcoLabAction =
   | { type: "add"; kind: EcoIngredient }
   | { type: "remove"; kind: EcoIngredient }
+  | { type: "stir" }
   | { type: "seal" }
   | { type: "wait" }
+  | { type: "release" }
   | { type: "reset" };
 
 const CAMERA = {
@@ -45,6 +49,8 @@ function ecoReducer(state: EcoState, action: EcoLabAction): EcoState {
       return {
         ...state,
         [action.kind]: state[action.kind] + 1,
+        // Gula baru mengendap lagi sampai diaduk ulang.
+        stirred: action.kind === "sugar" ? false : state.stirred,
         actionId: state.actionId + 1,
         lastAction: action.kind,
       };
@@ -55,20 +61,36 @@ function ecoReducer(state: EcoState, action: EcoLabAction): EcoState {
       return {
         ...state,
         [action.kind]: state[action.kind] - 1,
+        stirred: state.stirred && !(action.kind === "sugar" && state.sugar === 1),
         actionId: state.actionId + 1,
-        lastAction: action.kind,
+        lastAction: null,
       };
     }
+    case "stir":
+      if (state.sealed || state.sugar === 0 || state.water === 0) return state;
+      return { ...state, stirred: true, actionId: state.actionId + 1, lastAction: "stir" };
     case "seal":
-      if (state.sealed) return state;
+      if (state.sealed || !state.stirred) return state;
       return { ...state, sealed: true, actionId: state.actionId + 1, lastAction: "seal" };
-    case "wait":
-      if (!state.sealed || state.days >= ECO_FERMENT_DAYS) return state;
+    case "wait": {
+      if (!state.sealed || state.days >= ECO_FERMENT_DAYS || state.pressure >= ECO_BULGE_PRESSURE) return state;
+      const days = Math.min(state.days + ECO_DAY_STEP, ECO_FERMENT_DAYS);
       return {
         ...state,
-        days: Math.min(state.days + ECO_DAY_STEP, ECO_FERMENT_DAYS),
+        days,
+        pressure: state.pressure + pressureGain(days),
         actionId: state.actionId + 1,
         lastAction: "wait",
+      };
+    }
+    case "release":
+      if (!state.sealed || state.pressure === 0) return state;
+      return {
+        ...state,
+        pressure: 0,
+        releases: state.releases + 1,
+        actionId: state.actionId + 1,
+        lastAction: "release",
       };
     case "reset":
       return createInitialEcoState();
@@ -87,10 +109,12 @@ export function EcoRatioLab() {
   const hudState = filled === 0
     ? "Wadah masih kosong"
     : !state.sealed
-      ? `${state.sugar} : ${state.scraps} : ${state.water} · ${evaluation.headspace}% ruang gas`
+      ? `${state.sugar} : ${state.scraps} : ${state.water} · ${evaluation.headspace}% ruang gas${state.sugar > 0 && !state.stirred ? " · gula mengendap" : ""}`
       : state.days >= ECO_FERMENT_DAYS
         ? "Fermentasi 90 hari selesai"
-        : `Hari ke-${state.days} · gas terbentuk`;
+        : evaluation.bulging
+          ? `Hari ke-${state.days} · wadah mengembung!`
+          : `Hari ke-${state.days} · ${evaluation.pressureLabel.toLowerCase()}`;
 
   return (
     <SimulationShell
@@ -103,10 +127,10 @@ export function EcoRatioLab() {
       instructions={(
         <>
           <p>
-            Susun takaran <strong>1 bagian gula : 3 bagian sisa buah dan sayur : 10 bagian air</strong>. Setiap bahan yang kamu tekan benar-benar masuk ke dalam wadah.
+            Susun takaran <strong>1 bagian gula : 3 bagian sisa buah dan sayur : 10 bagian air</strong>. Bahan di meja berpindah ke dalam wadah, dan skala di dinding wadah menunjukkan berapa bagian yang sudah terisi.
           </p>
           <p>
-            Seret mendatar area gambar untuk memutar wadah 360°. Sisakan ruang kosong di atas karena fermentasi menghasilkan gas, lalu tutup dan tunggu 90 hari.
+            Seret mendatar area gambar untuk memutar wadah 360°. Isi jangan melewati garis merah batas isi, aduk sampai gula larut, tutup rapat, lalu periksa wadahnya selama 90 hari karena gas terus terbentuk.
           </p>
         </>
       )}
@@ -134,8 +158,10 @@ export function EcoRatioLab() {
                 label: "Air = 10 kali gula",
                 done: state.sugar > 0 && Math.abs((state.water / state.sugar) - 10) <= 1,
               },
-              { label: "Sisakan ruang gas minimal 20%", done: filled > 0 && evaluation.headspace >= 20 },
-              { label: "Tutup wadahnya", done: state.sealed },
+              { label: "Isi tidak melewati garis batas isi (ruang gas 20%)", done: filled > 0 && evaluation.headspace >= 20 },
+              { label: "Aduk sampai gula larut", done: state.stirred },
+              { label: "Tutup rapat dan tulis tanggalnya", done: state.sealed },
+              { label: "Buka tutup perlahan saat wadah mengembung", done: state.releases > 0 },
               { label: "Simpan di tempat teduh sampai hari ke-90", done: state.days >= ECO_FERMENT_DAYS },
             ]}
             title="Resep Eco Enzyme"
@@ -179,18 +205,34 @@ export function EcoRatioLab() {
             <button
               className="sim-lab__control sim-lab__control--mix"
               type="button"
-              disabled={!evaluation.canSeal}
-              onClick={() => dispatch({ type: "seal" })}
+              disabled={!evaluation.canStir}
+              onClick={() => dispatch({ type: "stir" })}
             >
-              {state.sealed ? "Wadah sudah ditutup" : "Tutup wadah"}
+              {state.stirred || state.sealed ? "✓ Gula sudah larut" : "Aduk sampai larut"}
             </button>
             <button
               className="sim-lab__control sim-lab__control--mix"
               type="button"
-              disabled={!state.sealed || state.days >= ECO_FERMENT_DAYS}
+              disabled={!evaluation.canSeal}
+              onClick={() => dispatch({ type: "seal" })}
+            >
+              {state.sealed ? "✓ Tertutup rapat" : "Tutup rapat"}
+            </button>
+            <button
+              className="sim-lab__control sim-lab__control--mix"
+              type="button"
+              disabled={!evaluation.canWait}
               onClick={() => dispatch({ type: "wait" })}
             >
               Lewati {ECO_DAY_STEP} hari
+            </button>
+            <button
+              className={`sim-lab__control${evaluation.bulging ? " sim-lab__control--warn" : ""}`}
+              type="button"
+              disabled={!evaluation.canRelease}
+              onClick={() => dispatch({ type: "release" })}
+            >
+              Buka tutup perlahan
             </button>
           </div>
 
@@ -227,6 +269,15 @@ export function EcoRatioLab() {
                   {evaluation.headspace}%
                 </meter>
                 <span>{evaluation.headspace}% · {evaluation.headspaceLabel}</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Tekanan gas</dt>
+              <dd>
+                <meter min={0} max={130} low={50} high={99} optimum={0} value={state.sealed ? state.pressure : 0}>
+                  {state.pressure}
+                </meter>
+                <span>{evaluation.pressureLabel}</span>
               </dd>
             </div>
             <div>

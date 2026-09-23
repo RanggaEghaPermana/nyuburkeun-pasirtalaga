@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { useReducer } from "react";
 import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationShell } from "../shared/SimulationShell";
 import { useWebGLSupport } from "../shared/useWebGLSupport";
@@ -33,8 +33,6 @@ const CAMERA = {
   fov: 36,
 };
 
-const POUR_DURATION_MS = 1500;
-
 function mixReducer(state: MixState, action: MixAction): MixState {
   switch (action.type) {
     case "add": {
@@ -45,6 +43,7 @@ function mixReducer(state: MixState, action: MixAction): MixState {
         [action.material]: state[action.material] + 1,
         layers: [...state.layers, { id: state.actionId + 1, material: action.material }],
         actionId: state.actionId + 1,
+        lastAction: "add",
       };
     }
     case "remove": {
@@ -67,16 +66,24 @@ function mixReducer(state: MixState, action: MixAction): MixState {
         [action.material]: state[action.material] - 1,
         layers: state.layers.filter((_, index) => index !== lastIndex),
         actionId: state.actionId + 1,
+        lastAction: "remove",
       };
     }
     case "water":
-      return { ...state, watering: action.watering, actionId: state.actionId + 1 };
+      return {
+        ...state,
+        watering: action.watering,
+        waterings: state.waterings + 1,
+        actionId: state.actionId + 1,
+        lastAction: "water",
+      };
     case "grow":
       if (state.days >= MIX_BLOOM_DAYS) return state;
       return {
         ...state,
         days: Math.min(state.days + MIX_DAY_STEP, MIX_BLOOM_DAYS),
         actionId: state.actionId + 1,
+        lastAction: "grow",
       };
     case "reset":
       return createInitialMixState();
@@ -85,22 +92,13 @@ function mixReducer(state: MixState, action: MixAction): MixState {
 
 export function PottingMixLab() {
   const [state, dispatch] = useReducer(mixReducer, undefined, createInitialMixState);
-  const [pouring, setPouring] = useState(false);
   const webGLAvailable = useWebGLSupport();
   const reduceMotion = useReducedMotion();
   const evaluation = evaluatePottingMix(state);
   const untouched = state.layers.length === 0 && state.watering === "none";
 
-  useEffect(() => {
-    if (!pouring) return;
-
-    const timer = window.setTimeout(() => setPouring(false), POUR_DURATION_MS);
-    return () => window.clearTimeout(timer);
-  }, [pouring]);
-
   const water = (watering: Watering) => {
     dispatch({ type: "water", watering });
-    if (!reduceMotion) setPouring(true);
   };
 
   const hudState = state.layers.length === 0
@@ -128,9 +126,9 @@ export function PottingMixLab() {
       scene={(
         <PottingMixScene
           bloomed={evaluation.bloomed}
+          drainage={evaluation.drainage}
           growth={evaluation.growth}
           plantHealth={evaluation.plantHealth}
-          pouring={pouring}
           reduceMotion={reduceMotion}
           state={state}
         />

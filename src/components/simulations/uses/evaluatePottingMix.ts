@@ -1,14 +1,18 @@
 export type MixMaterial = "soil" | "compost" | "sand";
 export type Watering = "none" | "plain" | "eco-diluted" | "eco-strong";
 
+export type MixLastAction = "add" | "remove" | "water" | "grow";
+
 export type MixState = {
   soil: number;
   compost: number;
   sand: number;
   layers: { id: number; material: MixMaterial }[];
   watering: Watering;
+  waterings: number;
   days: number;
   actionId: number;
+  lastAction: MixLastAction | null;
 };
 
 export const MIX_CAPACITY = 12;
@@ -23,10 +27,13 @@ export const MIX_TARGET = {
 };
 
 export function createInitialMixState(): MixState {
-  return { soil: 0, compost: 0, sand: 0, layers: [], watering: "none", days: 0, actionId: 0 };
+  return { soil: 0, compost: 0, sand: 0, layers: [], watering: "none", waterings: 0, days: 0, actionId: 0, lastAction: null };
 }
 
+export type Drainage = "none" | "poor" | "good" | "fast";
+
 export type MixEvaluation = {
+  drainage: Drainage;
   tone: "neutral" | "success" | "attention";
   title: string;
   message: string;
@@ -106,6 +113,14 @@ export function evaluatePottingMix(state: MixState): MixEvaluation {
         ? "Terlalu berpasir, air cepat habis"
         : "Air mengalir dengan baik";
 
+  const drainage: Drainage = total === 0
+    ? "none"
+    : sandShare < MIX_TARGET.sand.min || compostShare > 45
+      ? "poor"
+      : sandShare > MIX_TARGET.sand.max
+        ? "fast"
+        : "good";
+
   const growth = Math.round((Math.min(state.days, MIX_BLOOM_DAYS) / MIX_BLOOM_DAYS) * 100);
   const canGrow = isReady && state.days < MIX_BLOOM_DAYS;
   const bloomed = isReady && state.days >= MIX_BLOOM_DAYS;
@@ -119,6 +134,7 @@ export function evaluatePottingMix(state: MixState): MixEvaluation {
         : `Hari ke-${state.days} dari ${MIX_BLOOM_DAYS}`;
 
   const base = {
+    drainage,
     total,
     compostShare,
     sandShare,

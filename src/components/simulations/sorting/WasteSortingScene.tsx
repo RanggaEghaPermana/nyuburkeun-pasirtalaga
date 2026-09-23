@@ -1,12 +1,14 @@
-import { Canvas, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MathUtils, PerspectiveCamera, Raycaster, Vector2, type Object3D } from "three";
+import { GardenLighting, GardenWorld } from "../shared/GardenWorld";
+import { LabCanvas } from "../shared/LabCanvas";
 import {
   OrbitCameraControls,
   type OrbitCameraControlsHandle,
 } from "../shared/OrbitCameraControls";
 import { DraggableWaste, type SortingDropTarget } from "./DraggableWaste";
-import { GardenSortingStation } from "./GardenSortingStation";
+import { GardenSortingStation, STATION_FLOOR_Y } from "./GardenSortingStation";
 import { IndonesianWasteBin } from "./IndonesianWasteBin";
 import {
   binDefinitionsByCategory,
@@ -14,7 +16,7 @@ import {
   type BinDefinition,
   type WasteCategory,
 } from "./sortingBins";
-import type { WasteItem } from "./wasteItems";
+import type { WasteItem, WasteShape } from "./wasteItems";
 
 type BinPlacement = {
   definition: BinDefinition;
@@ -26,6 +28,10 @@ type BinPlacement = {
 
 type WasteSortingSceneProps = {
   item: WasteItem;
+  // Sampah yang sudah masuk tong, per kategori, dan yang masih di keranjang.
+  sorted: Readonly<Record<WasteCategory, readonly WasteShape[]>>;
+  remaining: readonly WasteShape[];
+  finished: boolean;
   enabled: boolean;
   highlightedCategory: WasteCategory | null;
   wrongCategory: WasteCategory | null;
@@ -173,9 +179,14 @@ function SortingWorld(props: WasteSortingSceneProps) {
         -(((event.clientY - bounds.top) / Math.max(1, bounds.height)) * 2 - 1),
       );
       raycaster.setFromCamera(pointer, camera);
-      const grabbedWaste = raycaster
-        .intersectObjects(scene.children, true)
-        .some((intersection) => isDraggableHitTarget(intersection.object));
+      // Hanya bola sentuh sampah yang diperiksa. Me-raycast seluruh kebun
+      // (ribuan rumpun rumput dan daun) pada setiap sentuhan terlalu mahal.
+      const hitTarget = scene.getObjectByName("draggable-waste-hit-target");
+      const grabbedWaste = hitTarget
+        ? raycaster
+          .intersectObject(hitTarget, false)
+          .some((intersection) => isDraggableHitTarget(intersection.object))
+        : false;
       if (grabbedWaste) {
         controlsRef.current?.setEnabled(false);
         queueMicrotask(() => {
@@ -202,8 +213,8 @@ function SortingWorld(props: WasteSortingSceneProps) {
 
   return (
     <>
-      <color attach="background" args={["#dcebd5"]} />
-      <fog attach="fog" args={["#dcebd5", 10.5, 20]} />
+      <GardenLighting shadowExtent={6.5} target={[0, -0.6, -0.4]} />
+      <GardenWorld clearing={4.35} fog={[16, 72]} groundY={STATION_FLOOR_Y - 0.12} unitsPerMeter={1.25} />
       <CameraRig compact={compact} />
       <OrbitCameraControls
         key={controlsEpoch}
@@ -217,11 +228,7 @@ function SortingWorld(props: WasteSortingSceneProps) {
         maxPolarAngle={Math.PI * 0.49}
       />
 
-      <hemisphereLight intensity={1.42} color="#fff7dc" groundColor="#47634f" />
-      <directionalLight position={[4.5, 8, 5.8]} intensity={2.35} color="#fff2cf" />
-      <directionalLight position={[-5, 3.5, -3]} intensity={0.72} color="#acd9bc" />
-
-      <GardenSortingStation compact={compact} />
+      <GardenSortingStation basketPosition={startPosition} compact={compact} remaining={props.remaining} />
 
       {layout.map((placement) => (
         <group
@@ -231,15 +238,17 @@ function SortingWorld(props: WasteSortingSceneProps) {
           scale={placement.scale}
         >
           <IndonesianWasteBin
+            contents={props.sorted[placement.definition.category]}
             definition={placement.definition}
-            position={[0, 0, 0]}
             highlighted={props.highlightedCategory === placement.definition.category}
-            wrong={props.wrongCategory === placement.definition.category}
+            open={props.finished}
             reducedMotion={props.reducedMotion}
+            wrong={props.wrongCategory === placement.definition.category}
           />
         </group>
       ))}
 
+      {props.finished ? null : (
       <DraggableWaste
         item={props.item}
         startPosition={startPosition}
@@ -254,20 +263,15 @@ function SortingWorld(props: WasteSortingSceneProps) {
         onReturnComplete={props.onReturnComplete}
         onSuccessComplete={props.onSuccessComplete}
       />
+      )}
     </>
   );
 }
 
 export function WasteSortingScene(props: WasteSortingSceneProps) {
   return (
-    <Canvas
-      aria-hidden="true"
-      camera={{ position: [0, 3.72, 10.7], fov: 38 }}
-      dpr={[1, 2]}
-      frameloop="demand"
-      gl={{ alpha: false, antialias: true, powerPreference: "high-performance" }}
-    >
+    <LabCanvas camera={{ position: [0, 3.72, 10.7], fov: 38 }}>
       <SortingWorld {...props} />
-    </Canvas>
+    </LabCanvas>
   );
 }

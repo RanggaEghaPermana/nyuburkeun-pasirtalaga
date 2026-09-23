@@ -383,10 +383,6 @@ export function DraggableWaste({
 
   return (
     <group ref={groupRef} position={startPosition}>
-      <mesh position={[0, -0.57, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[1, 0.52, 1]}>
-        <circleGeometry args={[0.52, 24]} />
-        <meshBasicMaterial color="#244b39" depthWrite={false} opacity={0.18} transparent />
-      </mesh>
       <group scale={visualScale}>
         <WasteObject shape={item.shape} />
       </group>

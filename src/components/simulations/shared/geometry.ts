@@ -126,6 +126,21 @@ export function smoothLatheGeometry(
   return geometry;
 }
 
+// Titik profil yang sudah dihaluskan, untuk lathe sebagian (potongan) dan
+// bidang potongnya yang harus berbagi bentuk persis sama.
+export function sampleProfile(profile: readonly (readonly [number, number])[], samples = 44) {
+  const spline = new CatmullRomCurve3(profile.map(([radius, y]) => new Vector3(radius, y, 0)));
+  const radii = profile.map(([radius]) => radius);
+  const heights = profile.map(([, y]) => y);
+  const maxRadius = Math.max(...radii);
+  const minHeight = Math.min(...heights);
+  const maxHeight = Math.max(...heights);
+  return spline.getPoints(samples).map((point) => new Vector2(
+    Math.min(Math.max(point.x, 0.0006), maxRadius),
+    Math.min(Math.max(point.y, minHeight), maxHeight),
+  ));
+}
+
 type SurfaceBandOptions = {
   fromY: number;
   toY: number;
@@ -347,4 +362,84 @@ export function petioleCurve({ length, width, curl }: LeafShape) {
     new Vector3(base - 0.08, -0.01, width * 0.04),
     new Vector3(base - 0.17, -0.05, width * 0.1),
   ]);
+}
+
+// Tabung dengan jari-jari yang berubah sepanjang kurva, untuk batang, dahan,
+// tangkai, dan akar. TubeGeometry bawaan hanya punya satu jari-jari.
+export function taperedTubeGeometry(
+  curve: CatmullRomCurve3,
+  radius: (progress: number) => number,
+  { tubularSegments = 24, radialSegments = 10, uvLength = 1 }: {
+    tubularSegments?: number;
+    radialSegments?: number;
+    uvLength?: number;
+  } = {},
+) {
+  const frames = curve.computeFrenetFrames(tubularSegments, false);
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const point = new Vector3();
+  const normal = new Vector3();
+
+  for (let i = 0; i <= tubularSegments; i += 1) {
+    const progress = i / tubularSegments;
+    curve.getPointAt(progress, point);
+    const frameNormal = frames.normals[i];
+    const frameBinormal = frames.binormals[i];
+    const r = Math.max(radius(progress), 0.0004);
+
+    for (let j = 0; j <= radialSegments; j += 1) {
+      const angle = (j / radialSegments) * Math.PI * 2;
+      const sin = Math.sin(angle);
+      const cos = -Math.cos(angle);
+      normal.set(
+        (cos * frameNormal.x) + (sin * frameBinormal.x),
+        (cos * frameNormal.y) + (sin * frameBinormal.y),
+        (cos * frameNormal.z) + (sin * frameBinormal.z),
+      ).normalize();
+      positions.push(point.x + (normal.x * r), point.y + (normal.y * r), point.z + (normal.z * r));
+      normals.push(normal.x, normal.y, normal.z);
+      uvs.push(j / radialSegments, progress * uvLength);
+    }
+  }
+
+  for (let i = 0; i < tubularSegments; i += 1) {
+    for (let j = 0; j < radialSegments; j += 1) {
+      const a = (i * (radialSegments + 1)) + j;
+      const b = ((i + 1) * (radialSegments + 1)) + j;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute("normal", new BufferAttribute(new Float32Array(normals), 3));
+  geometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
+  geometry.setIndex(indices);
+  return geometry;
+}
+
+// ExtrudeGeometry memakai koordinat x/y mentah sebagai UV. Tekstur yang harus
+// menutup satu permukaan tepat sekali (koran, label, kardus) perlu UV 0..1.
+export function planarUV(geometry: BufferGeometry, axes: "xy" | "xz" | "zy" = "xy") {
+  geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  const position = geometry.attributes.position as BufferAttribute;
+  if (!box) return geometry;
+  const [a, b] = axes === "xy" ? ["x", "y"] as const : axes === "xz" ? ["x", "z"] as const : ["z", "y"] as const;
+  const minA = box.min[a];
+  const minB = box.min[b];
+  const spanA = Math.max(box.max[a] - minA, 1e-6);
+  const spanB = Math.max(box.max[b] - minB, 1e-6);
+  const uv = new Float32Array(position.count * 2);
+  const vertex = new Vector3();
+  for (let index = 0; index < position.count; index += 1) {
+    vertex.fromBufferAttribute(position, index);
+    uv[index * 2] = (vertex[a] - minA) / spanA;
+    uv[(index * 2) + 1] = (vertex[b] - minB) / spanB;
+  }
+  geometry.setAttribute("uv", new BufferAttribute(uv, 2));
+  return geometry;
 }

@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SimulationErrorBoundary } from "../shared/SimulationErrorBoundary";
 import { useReducedMotion } from "../shared/useReducedMotion";
 import { binDefinitions, binDefinitionsByCategory, type WasteCategory } from "./sortingBins";
-import { wasteItems } from "./wasteItems";
+import { wasteItems, type WasteShape } from "./wasteItems";
 import { WasteSortingScene } from "./WasteSortingScene";
 
 type SortingPhase = "ready" | "dragging" | "returning" | "correct" | "finished";
@@ -185,6 +185,28 @@ export function WasteSortingLab() {
     </div>
   );
 
+  // Semua sampah sebelum yang sedang dipegang sudah masuk ke tong yang benar,
+  // karena permainan baru maju setelah pilihan tepat. Isi tong dan keranjang
+  // dihitung dari urutan itu.
+  const sorted = useMemo(() => {
+    const result: Record<WasteCategory, WasteShape[]> = {
+      organic: [],
+      reusable: [],
+      recyclable: [],
+      hazardous: [],
+      residue: [],
+    };
+    const count = phase === "finished"
+      ? wasteItems.length
+      : index + (phase === "correct" && successAnimationComplete ? 1 : 0);
+    wasteItems.slice(0, count).forEach((entry) => result[entry.category].push(entry.shape));
+    return result;
+  }, [index, phase, successAnimationComplete]);
+  const remaining = useMemo(
+    () => (phase === "finished" ? [] : wasteItems.slice(index + 1).map((entry) => entry.shape)),
+    [index, phase],
+  );
+
   const hoveredLabel = highlightedCategory
     ? binDefinitionsByCategory[highlightedCategory].shortLabel
     : null;
@@ -248,6 +270,9 @@ export function WasteSortingLab() {
                 <>
                   <strong>Hebat! Sampah masuk ke tong {binDefinitionsByCategory[item.category].shortLabel}.</strong>
                   <p>{item.explanation}</p>
+                  <p className="simulation-feedback__destination">
+                    <span>Selanjutnya</span> {binDefinitionsByCategory[item.category].destination}
+                  </p>
                   <button ref={nextButtonRef} className="simulation-next" type="button" onClick={nextItem}>
                     {index === wasteItems.length - 1 ? "Lihat hasil" : "Lanjut sekarang"} <span aria-hidden="true">→</span>
                   </button>
@@ -286,64 +311,67 @@ export function WasteSortingLab() {
       </div>
 
       <div className="simulation-shell__visual">
-        {phase === "finished" ? (
-          <div className="sorting-complete-visual" aria-hidden="true">
-            <span>✓</span>
-            <strong>Semua sudah terpilah</strong>
-            <p>Lima warna, lima tujuan, satu kebiasaan baik dari rumah.</p>
-          </div>
-        ) : (
-          <>
-            <div className={`simulation-canvas simulation-canvas--sorting${phase === "dragging" ? " is-dragging" : ""}`}>
-              <div className="sorting-stage-instruction" aria-hidden="true">
-                <span>
-                  {phase === "correct"
-                    ? "Berhasil dipilah · berikutnya disiapkan"
-                    : phase === "dragging"
-                      ? "Arahkan ke mulut tong"
-                      : "Seret objek · putar area kosong"}
-                </span>
-                <strong>
-                  {phase === "correct"
-                    ? `Masuk tong ${binDefinitionsByCategory[item.category].shortLabel}`
-                    : item.label}
-                </strong>
+        <div className={`simulation-canvas simulation-canvas--sorting${phase === "dragging" ? " is-dragging" : ""}${phase === "finished" ? " is-finished" : ""}`}>
+          {phase === "finished" ? (
+            <div className="sorting-complete-overlay" aria-hidden="true">
+              <span>✓</span>
+              <div>
+                <strong>Semua sudah terpilah</strong>
+                <p>Tutup tong terbuka. Putar stasiun untuk melihat isi setiap tong.</p>
               </div>
-              <div className="sorting-stage-scroll-hint" aria-hidden="true">Geser halaman</div>
-              {phase === "correct" ? (
-                <button className="sorting-stage-next" type="button" onClick={nextItem}>
-                  <span>Benar!</span>
-                  {index === wasteItems.length - 1 ? "Lihat hasil" : "Sampah berikutnya"}
-                  <b aria-hidden="true">→</b>
-                </button>
-              ) : null}
-              <SimulationErrorBoundary fallback={fallback}>
-                <WasteSortingScene
-                  item={item}
-                  enabled={enabled}
-                  highlightedCategory={highlightedCategory}
-                  wrongCategory={wrongCategory}
-                  reducedMotion={reducedMotion}
-                  onDragChange={handleDragChange}
-                  onHoverChange={handleHoverChange}
-                  onDrop={handleDrop}
-                  onReturnComplete={handleReturnComplete}
-                  onSuccessComplete={handleSuccessComplete}
-                />
-              </SimulationErrorBoundary>
             </div>
+          ) : (
+            <div className="sorting-stage-instruction" aria-hidden="true">
+              <span>
+                {phase === "correct"
+                  ? "Berhasil dipilah · berikutnya disiapkan"
+                  : phase === "dragging"
+                    ? "Arahkan ke mulut tong"
+                    : "Seret objek · putar area kosong"}
+              </span>
+              <strong>
+                {phase === "correct"
+                  ? `Masuk tong ${binDefinitionsByCategory[item.category].shortLabel}`
+                  : item.label}
+              </strong>
+            </div>
+          )}
+          <div className="sorting-stage-scroll-hint" aria-hidden="true">Geser halaman</div>
+          {phase === "correct" ? (
+            <button className="sorting-stage-next" type="button" onClick={nextItem}>
+              <span>Benar!</span>
+              {index === wasteItems.length - 1 ? "Lihat hasil" : "Sampah berikutnya"}
+              <b aria-hidden="true">→</b>
+            </button>
+          ) : null}
+          <SimulationErrorBoundary fallback={fallback}>
+            <WasteSortingScene
+              item={item}
+              sorted={sorted}
+              remaining={remaining}
+              finished={phase === "finished"}
+              enabled={enabled}
+              highlightedCategory={highlightedCategory}
+              wrongCategory={wrongCategory}
+              reducedMotion={reducedMotion}
+              onDragChange={handleDragChange}
+              onHoverChange={handleHoverChange}
+              onDrop={handleDrop}
+              onReturnComplete={handleReturnComplete}
+              onSuccessComplete={handleSuccessComplete}
+            />
+          </SimulationErrorBoundary>
+        </div>
 
-            <ul className="sorting-bin-key" aria-label="Lima kategori tong sampah">
-              {binDefinitions.map((definition) => (
-                <li className={`sorting-bin-key__${definition.category}`} key={definition.category}>
-                  <span aria-hidden="true" />
-                  {definition.shortLabel}
-                </li>
-              ))}
-            </ul>
-            <p className="simulation-caption">Cocokkan warna, tulisan, dan contoh pada setiap tong.</p>
-          </>
-        )}
+        <ul className="sorting-bin-key" aria-label="Lima kategori tong sampah">
+          {binDefinitions.map((definition) => (
+            <li className={`sorting-bin-key__${definition.category}`} key={definition.category}>
+              <span aria-hidden="true" />
+              {definition.shortLabel}
+            </li>
+          ))}
+        </ul>
+        <p className="simulation-caption">Cocokkan warna, tulisan, dan contoh pada label setiap tong.</p>
       </div>
     </section>
   );

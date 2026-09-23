@@ -1,15 +1,18 @@
 import { useReducer } from "react";
 import { RecipeCard } from "../shared/RecipeCard";
 import { SimulationShell } from "../shared/SimulationShell";
+import { useReducedMotion } from "../shared/useReducedMotion";
 import { useWebGLSupport } from "../shared/useWebGLSupport";
 import { ProductShelfScene } from "./ProductShelfScene";
 import {
   CONTAINERS,
+  MARKET_BUYERS,
   PRICE_MAX,
   PRICE_MIN,
   PRICE_STEP,
   createInitialProductState,
   evaluateProduct,
+  simulateMarketDay,
   type Container,
   type ProductState,
 } from "./evaluateProduct";
@@ -19,6 +22,7 @@ type ProductAction =
   | { type: "toggle-label" }
   | { type: "toggle-info" }
   | { type: "price"; price: number }
+  | { type: "sell" }
   | { type: "reset" };
 
 const CAMERA = {
@@ -31,17 +35,19 @@ const CONTAINER_ORDER: Container[] = ["pouch", "bottle", "jar"];
 function productReducer(state: ProductState, action: ProductAction): ProductState {
   switch (action.type) {
     case "container":
-      return { ...state, container: action.container, actionId: state.actionId + 1 };
+      if (state.container === action.container) return state;
+      return { ...state, container: action.container, marketDay: 0, actionId: state.actionId + 1 };
     case "toggle-label":
-      return { ...state, hasLabel: !state.hasLabel, actionId: state.actionId + 1 };
+      return { ...state, hasLabel: !state.hasLabel, marketDay: 0, actionId: state.actionId + 1 };
     case "toggle-info":
-      return { ...state, hasInfo: !state.hasInfo, actionId: state.actionId + 1 };
-    case "price":
-      return {
-        ...state,
-        price: Math.max(PRICE_MIN, Math.min(PRICE_MAX, action.price)),
-        actionId: state.actionId + 1,
-      };
+      return { ...state, hasInfo: !state.hasInfo, marketDay: 0, actionId: state.actionId + 1 };
+    case "price": {
+      const price = Math.max(PRICE_MIN, Math.min(PRICE_MAX, action.price));
+      if (price === state.price) return state;
+      return { ...state, price, marketDay: 0, actionId: state.actionId + 1 };
+    }
+    case "sell":
+      return { ...state, marketDay: state.marketDay + 1, actionId: state.actionId + 1 };
     case "reset":
       return createInitialProductState();
   }
@@ -52,13 +58,17 @@ const rupiah = (value: number) => `Rp${value.toLocaleString("id-ID")}`;
 export function ProductShelfLab() {
   const [state, dispatch] = useReducer(productReducer, undefined, createInitialProductState);
   const webGLAvailable = useWebGLSupport();
+  const reduceMotion = useReducedMotion();
   const evaluation = evaluateProduct(state);
   const container = CONTAINERS[state.container];
+  const market = simulateMarketDay(state);
+  const opened = state.marketDay > 0;
   const initial = createInitialProductState();
   const untouched = state.container === initial.container
     && state.hasLabel === initial.hasLabel
     && state.hasInfo === initial.hasInfo
-    && state.price === initial.price;
+    && state.price === initial.price
+    && state.marketDay === 0;
 
   return (
     <SimulationShell
@@ -67,18 +77,20 @@ export function ProductShelfLab() {
       eyebrow="Permainan kemasan dan harga 3D"
       fallbackLabel={`Ilustrasi produk: ${container.label}, ${state.hasLabel ? "berlabel" : "tanpa label"}, ${state.hasInfo ? "ada keterangan" : "tanpa keterangan"}, harga ${rupiah(state.price)}.`}
       hudHint="Putar produk 360°"
-      hudState={`${container.label} · ${rupiah(state.price)} · untung ${evaluation.marginShare}%`}
+      hudState={opened
+        ? `Bazar · ${market.sold}/${MARKET_BUYERS} laku · untung ${rupiah(market.profit)}`
+        : `${container.label} · ${rupiah(state.price)} · untung ${evaluation.marginShare}%`}
       instructions={(
         <>
           <p>
             Rakit produkmu: pilih kemasan, tempelkan label, tulis keterangan yang jujur, lalu tentukan harga jualnya.
           </p>
           <p>
-            Seret mendatar area gambar untuk memutar produk 360°. Perhatikan bagaimana biaya kemasan, kepercayaan pembeli, dan harga saling memengaruhi.
+            Seret mendatar area gambar untuk memutar lapak 360°. Setelah siap, buka lapak di bazar dan lihat berapa dari sepuluh pembeli yang benar-benar membeli.
           </p>
         </>
       )}
-      scene={<ProductShelfScene ready={evaluation.isReady} state={state} />}
+      scene={<ProductShelfScene reduceMotion={reduceMotion} sold={opened ? market.sold : 0} state={state} />}
       title="Rakit Kemasan dan Tentukan Harga"
       webGLAvailable={webGLAvailable}
       fallback={(
@@ -99,6 +111,7 @@ export function ProductShelfLab() {
               { label: "Harga jual di atas biaya kemasan", done: evaluation.margin > 0 },
               { label: "Untung minimal 20% dari harga jual", done: evaluation.marginShare >= 20 },
               { label: "Harga masuk kisaran nyaman pembeli", done: evaluation.appealScore === 100 },
+              { label: "Buka lapak: minimal 7 dari 10 pembeli membeli dan tetap untung", done: opened && market.success },
             ]}
             title="Resep Produk Siap Jual"
           />
@@ -138,6 +151,16 @@ export function ProductShelfLab() {
             </button>
           </div>
 
+          <div className="sim-lab__controls" role="group" aria-label="Jual di bazar">
+            <button
+              className="sim-lab__control sim-lab__control--mix"
+              type="button"
+              onClick={() => dispatch({ type: "sell" })}
+            >
+              {opened ? "Buka lapak lagi" : "Buka lapak di bazar"}
+            </button>
+          </div>
+
           <div className="sim-lab__slider">
             <label htmlFor="product-price">
               Harga jual: <strong>{rupiah(state.price)}</strong>
@@ -167,6 +190,33 @@ export function ProductShelfLab() {
             <p>{evaluation.message}</p>
             <p className="sim-lab__next-action"><strong>Coba lakukan:</strong> {evaluation.nextAction}</p>
           </div>
+
+          {opened ? (
+            <div className="sim-lab__mix-result" role="status" aria-live="polite" aria-atomic="true">
+              <div className="sim-lab__mix-result-heading">
+                <span aria-hidden="true">{market.success ? "✓" : "!"}</span>
+                <div>
+                  <p>Hasil hari pasar</p>
+                  <strong>{market.headline}</strong>
+                </div>
+              </div>
+              <dl>
+                <div>
+                  <dt>Pendapatan</dt>
+                  <dd>{rupiah(market.revenue)}</dd>
+                </div>
+                <div>
+                  <dt>{market.profit >= 0 ? "Untung" : "Rugi"}</dt>
+                  <dd>{rupiah(Math.abs(market.profit))}</dd>
+                </div>
+              </dl>
+              {market.reasons.length > 0 ? (
+                <p>{market.reasons.join(" ")}</p>
+              ) : (
+                <p>Label jelas, keterangan jujur, dan harganya pas. Semua pembeli yang mampir pulang membawa produkmu.</p>
+              )}
+            </div>
+          ) : null}
 
           <dl className="sim-lab__metrics">
             <div>

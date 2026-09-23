@@ -6,18 +6,30 @@ import {
   Vector3,
 } from "three";
 import type { WasteShape } from "./wasteItems";
+import { GlassMaterial } from "../shared/GlassMaterial";
 import {
   crumpleGeometry,
   dryLeafGeometry,
   leafMidribCurve,
   leafVeinCurves,
   petioleCurve,
+  planarUV,
   roundedPlateGeometry,
   smoothLatheGeometry,
   sweptRibbonGeometry,
   warpGeometry,
   type LeafShape,
 } from "../shared/geometry";
+import { bananaPeelMaps, dryLeafMaps, kraftMaps } from "../shared/organicTextures";
+import { fabricMaps, withRepeat } from "../shared/textures";
+import {
+  batteryWrapTexture,
+  diaperPrintTexture,
+  jarLabelTexture,
+  newsprintTexture,
+  tissueMaps,
+  totePrintTexture,
+} from "./wasteTextures";
 
 type WasteObjectProps = {
   shape: WasteShape;
@@ -97,14 +109,36 @@ const JAR_BODY = smoothLatheGeometry([
   [0.001, -0.38],
 ]);
 
-const JAR_LID = smoothLatheGeometry([
+const JAR_LID = warpGeometry(smoothLatheGeometry([
   [0.001, 0.5],
   [0.19, 0.495],
   [0.27, 0.475],
   [0.28, 0.42],
   [0.275, 0.37],
   [0.001, 0.37],
-]);
+], 64), (vertex) => {
+  const radius = Math.hypot(vertex.x, vertex.z);
+  if (radius < 0.27 || vertex.y > 0.47) return;
+  const ridge = Math.cos(Math.atan2(vertex.x, vertex.z) * 40) > 0 ? 0.006 : 0;
+  vertex.x *= (radius + ridge) / radius;
+  vertex.z *= (radius + ridge) / radius;
+});
+
+const BULB_THREAD = warpGeometry(smoothLatheGeometry([
+  [0.001, -0.25],
+  [0.158, -0.26],
+  [0.158, -0.53],
+  [0.12, -0.58],
+  [0.001, -0.59],
+], 40, 60), (vertex) => {
+  if (vertex.y > -0.27 || vertex.y < -0.52) return;
+  const radius = Math.hypot(vertex.x, vertex.z);
+  if (radius < 0.1) return;
+  const angle = Math.atan2(vertex.x, vertex.z);
+  const thread = Math.sin((vertex.y * 70) + angle) * 0.012;
+  vertex.x *= (radius + thread) / radius;
+  vertex.z *= (radius + thread) / radius;
+});
 
 const BULB_GLASS = smoothLatheGeometry([
   [0.001, 0.52],
@@ -116,16 +150,6 @@ const BULB_GLASS = smoothLatheGeometry([
   [0.155, -0.26],
 ]);
 
-const BULB_BASE = smoothLatheGeometry([
-  [0.001, -0.24],
-  [0.155, -0.26],
-  [0.165, -0.34],
-  [0.152, -0.42],
-  [0.16, -0.5],
-  [0.14, -0.56],
-  [0.09, -0.62],
-  [0.001, -0.64],
-]);
 
 const BATTERY_BODY = smoothLatheGeometry([
   [0.001, -0.52],
@@ -162,20 +186,18 @@ const TOTE_HANDLES = [-0.08, 0.08].map((z, index) => new TubeGeometry(
   false,
 ));
 
-const CARDBOARD_BODY = roundedPlateGeometry(0.8, 0.46, 0.36, 0.026);
-const CARDBOARD_FLAP = roundedPlateGeometry(0.78, 0.32, 0.026, 0.018);
 
 // Lengkungan kertas dibatasi kecil karena tulisan ditempel pada offset tetap di
 // atasnya; warp yang besar akan mendorong kertas melewati tulisannya sendiri.
 const NEWSPAPER_WARP = 0.008;
 
-const NEWSPAPER_SHEETS = [0, 1, 2].map((index) => warpGeometry(
+const NEWSPAPER_SHEETS = [0, 1, 2].map((index) => planarUV(warpGeometry(
   roundedPlateGeometry(0.72 - (index * 0.02), 0.48 - (index * 0.016), 0.02, 0.018),
   (vertex) => {
     const across = vertex.y / 0.24;
     vertex.z += (across * across * NEWSPAPER_WARP) + (Math.sin(across * 2.2 + index) * 0.004);
   },
-));
+)));
 
 const NEWSPAPER_FOLD = warpGeometry(roundedPlateGeometry(0.72, 0.24, 0.022, 0.018), (vertex) => {
   const along = vertex.x / 0.36;
@@ -228,29 +250,29 @@ const DIAPER_WRAP = new TubeGeometry(
   false,
 );
 
+const CANVAS = () => withRepeat(fabricMaps("canvas"), 2.2, 2.2);
+const KRAFT_BOX = () => kraftMaps(true);
+
 export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "peel") {
+    const maps = bananaPeelMaps();
     return (
       <group dispose={null} position={[0, -0.3, 0]} rotation={[0.03, 0.32, 0.02]} scale={1.16}>
-        <mesh position={[0, 0.1, 0]} scale={[1, 0.62, 1]}>
+        <mesh castShadow position={[0, 0.1, 0]} scale={[1, 0.62, 1]}>
           <sphereGeometry args={[0.11, 16, 12]} />
-          <meshStandardMaterial color="#e9c53f" roughness={0.74} />
+          <meshStandardMaterial {...maps} />
         </mesh>
-        <mesh position={[0.02, 0.2, 0.01]} rotation={[0.2, 0, -0.34]}>
+        <mesh castShadow position={[0.02, 0.2, 0.01]} rotation={[0.2, 0, -0.34]}>
           <cylinderGeometry args={[0.026, 0.05, 0.17, 10]} />
-          <meshStandardMaterial color="#6d5024" roughness={0.94} />
+          <meshStandardMaterial color="#5a3f1c" roughness={0.94} />
         </mesh>
         {PEEL_SURFACES.map((surfaces, index) => (
           <group key={index}>
-            <mesh geometry={surfaces.outer}>
-              <meshStandardMaterial
-                color={index % 2 === 0 ? "#eec334" : "#f4ce47"}
-                roughness={0.66}
-                side={DoubleSide}
-              />
+            <mesh castShadow geometry={surfaces.outer}>
+              <meshStandardMaterial {...maps} side={DoubleSide} />
             </mesh>
             <mesh geometry={surfaces.inner}>
-              <meshStandardMaterial color="#f8eec6" roughness={0.88} side={DoubleSide} />
+              <meshStandardMaterial color="#f3e7c3" roughness={0.9} side={DoubleSide} />
             </mesh>
           </group>
         ))}
@@ -261,19 +283,19 @@ export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "leaf") {
     return (
       <group rotation={[0.16, 0.28, -0.14]}>
-        <mesh geometry={LEAF_BLADE}>
-          <meshStandardMaterial color="#b0783a" roughness={0.92} side={DoubleSide} />
+        <mesh castShadow geometry={LEAF_BLADE}>
+          <meshStandardMaterial {...dryLeafMaps("brown")} side={DoubleSide} />
         </mesh>
         <mesh geometry={LEAF_MIDRIB}>
-          <meshStandardMaterial color="#84592a" roughness={0.95} />
+          <meshStandardMaterial color="#7a5028" roughness={0.95} />
         </mesh>
         {LEAF_VEINS.map((geometry, index) => (
           <mesh geometry={geometry} key={index}>
-            <meshStandardMaterial color="#96662f" roughness={0.96} />
+            <meshStandardMaterial color="#8d5f2c" roughness={0.96} />
           </mesh>
         ))}
         <mesh geometry={LEAF_PETIOLE}>
-          <meshStandardMaterial color="#6f4a21" roughness={0.95} />
+          <meshStandardMaterial color="#5f3f1c" roughness={0.95} />
         </mesh>
       </group>
     );
@@ -282,27 +304,19 @@ export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "jar") {
     return (
       <group rotation={[0.05, 0.3, -0.06]}>
-        <mesh geometry={JAR_BODY}>
-          <meshPhysicalMaterial
-            color="#cfe7e2"
-            transmission={0.42}
-            thickness={0.3}
-            transparent
-            opacity={0.7}
-            roughness={0.12}
-            side={DoubleSide}
-          />
+        <mesh castShadow geometry={JAR_BODY}>
+          <GlassMaterial color="#e8f3ef" thickness={0.12} />
         </mesh>
-        <mesh geometry={JAR_LID}>
-          <meshStandardMaterial color="#d8a949" metalness={0.5} roughness={0.34} />
+        <mesh castShadow geometry={JAR_LID}>
+          <meshStandardMaterial color="#d6a743" metalness={0.75} roughness={0.28} />
         </mesh>
         <mesh position={[0, 0.42, 0]}>
           <cylinderGeometry args={[0.281, 0.281, 0.055, 30, 1, true]} />
-          <meshStandardMaterial color="#c1913a" metalness={0.55} roughness={0.42} side={DoubleSide} />
+          <meshStandardMaterial color="#b98a33" metalness={0.7} roughness={0.34} side={DoubleSide} />
         </mesh>
         <mesh position={[0, -0.08, 0]}>
-          <cylinderGeometry args={[0.359, 0.354, 0.28, 26, 1, true, -0.75, 1.5]} />
-          <meshStandardMaterial color="#fdf8ec" roughness={0.9} side={DoubleSide} />
+          <cylinderGeometry args={[0.358, 0.353, 0.26, 30, 1, true, -1.1, 2.2]} />
+          <meshStandardMaterial map={jarLabelTexture()} roughness={0.8} side={DoubleSide} />
         </mesh>
       </group>
     );
@@ -311,49 +325,49 @@ export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "tote") {
     return (
       <group rotation={[0.09, -0.24, -0.05]}>
-        <mesh geometry={TOTE_BODY} position={[0, -0.06, 0]}>
-          <meshStandardMaterial color="#d9bb87" roughness={0.96} side={DoubleSide} />
+        <mesh castShadow geometry={TOTE_BODY} position={[0, -0.06, 0]}>
+          <meshStandardMaterial {...CANVAS()} color="#f1e3c4" side={DoubleSide} />
         </mesh>
         <mesh position={[0, 0.22, 0]} rotation={[0, 0, 0.04]} scale={[0.66, 0.045, 0.2]}>
           <sphereGeometry args={[0.5, 20, 10]} />
-          <meshStandardMaterial color="#c2a273" roughness={0.96} />
+          <meshStandardMaterial {...CANVAS()} color="#d9c49d" />
         </mesh>
         {TOTE_HANDLES.map((geometry, index) => (
-          <mesh geometry={geometry} key={index} position={[0, -0.06, 0]}>
-            <meshStandardMaterial color="#a9814c" roughness={0.92} />
+          <mesh castShadow geometry={geometry} key={index} position={[0, -0.06, 0]}>
+            <meshStandardMaterial {...CANVAS()} color="#c9a877" />
           </mesh>
         ))}
-        <mesh position={[0, -0.1, 0.128]} rotation={[0.06, 0, 0]}>
-          <circleGeometry args={[0.13, 24]} />
-          <meshStandardMaterial color="#2f7d43" roughness={0.82} />
+        <mesh position={[0, -0.09, 0.132]} rotation={[0.06, 0, 0]}>
+          <planeGeometry args={[0.34, 0.34]} />
+          <meshStandardMaterial depthWrite={false} map={totePrintTexture()} polygonOffset polygonOffsetFactor={-2} roughness={0.9} transparent />
         </mesh>
       </group>
     );
   }
 
   if (shape === "cardboard") {
+    const kraft = KRAFT_BOX();
     return (
       <group rotation={[0.14, 0.34, -0.1]}>
-        <mesh geometry={CARDBOARD_BODY}>
-          <meshStandardMaterial color="#b9834c" roughness={0.94} />
+        <mesh castShadow>
+          <boxGeometry args={[0.8, 0.46, 0.36]} />
+          <meshStandardMaterial {...kraft} />
         </mesh>
-        <mesh geometry={CARDBOARD_FLAP} position={[0, 0.31, -0.14]} rotation={[-1.1, 0, 0]}>
-          <meshStandardMaterial color="#c69158" roughness={0.94} />
+        <mesh castShadow position={[0, 0.3, -0.15]} rotation={[-1.1, 0, 0]}>
+          <boxGeometry args={[0.78, 0.3, 0.02]} />
+          <meshStandardMaterial {...kraft} color="#f2e4d0" />
         </mesh>
-        <mesh geometry={CARDBOARD_FLAP} position={[0, 0.29, 0.15]} rotation={[1.24, 0, 0]}>
-          <meshStandardMaterial color="#a9773f" roughness={0.94} />
+        <mesh castShadow position={[0, 0.28, 0.16]} rotation={[1.24, 0, 0]}>
+          <boxGeometry args={[0.78, 0.3, 0.02]} />
+          <meshStandardMaterial {...kraft} color="#e0cdb2" />
         </mesh>
-        <mesh position={[0, 0.16, 0]} scale={[0.97, 1, 0.9]}>
-          <boxGeometry args={[0.78, 0.02, 0.36]} />
-          <meshStandardMaterial color="#8d6134" roughness={0.98} />
+        <mesh position={[0, 0.231, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[0.76, 0.34]} />
+          <meshStandardMaterial color="#6f4b28" roughness={1} />
         </mesh>
-        <mesh position={[0, -0.04, 0.181]}>
-          <planeGeometry args={[0.07, 0.44]} />
-          <meshStandardMaterial color="#e3c58f" roughness={0.72} />
-        </mesh>
-        <mesh position={[0.24, 0.06, 0.182]} rotation={[0, 0, 0.12]}>
-          <planeGeometry args={[0.2, 0.13]} />
-          <meshStandardMaterial color="#8a5f33" roughness={0.96} />
+        <mesh position={[0, -0.02, 0.181]}>
+          <planeGeometry args={[0.1, 0.44]} />
+          <meshPhysicalMaterial clearcoat={0.8} color="#d8b77e" opacity={0.85} roughness={0.3} transparent />
         </mesh>
       </group>
     );
@@ -364,86 +378,64 @@ export function WasteObject({ shape }: WasteObjectProps) {
       <group rotation={[-0.62, -0.2, 0.08]}>
         {NEWSPAPER_SHEETS.map((geometry, index) => (
           <mesh
+            castShadow
             geometry={geometry}
             key={index}
             position={[index * 0.006, index * -0.008, index * -0.021]}
             rotation={[0, 0, index * 0.026]}
           >
-            <meshStandardMaterial
-              color={index === 0 ? "#efebdf" : "#e2ddcf"}
-              roughness={0.97}
-              side={DoubleSide}
-            />
+            {index === 0 ? (
+              <meshStandardMaterial map={newsprintTexture()} roughness={0.95} side={DoubleSide} />
+            ) : (
+              <meshStandardMaterial color="#ddd7c7" roughness={0.97} side={DoubleSide} />
+            )}
           </mesh>
         ))}
         <mesh geometry={NEWSPAPER_FOLD} position={[0.004, 0.12, 0.026]} rotation={[0.16, 0, 0.01]}>
-          <meshStandardMaterial color="#f4f1e6" roughness={0.96} side={DoubleSide} />
-        </mesh>
-        <mesh position={[0, 0.18, 0.056]}>
-          <planeGeometry args={[0.48, 0.07]} />
-          <meshStandardMaterial color="#33403c" roughness={0.98} />
-        </mesh>
-        <mesh position={[0, 0.12, 0.054]}>
-          <planeGeometry args={[0.42, 0.01]} />
-          <meshStandardMaterial color="#7b8681" roughness={1} />
-        </mesh>
-        <mesh position={[-0.19, 0.06, 0.052]}>
-          <planeGeometry args={[0.2, 0.05]} />
-          <meshStandardMaterial color="#2f7362" roughness={0.94} />
-        </mesh>
-        {[-0.04, -0.09, -0.14, -0.19].map((y) => (
-          <mesh key={y} position={[0.03, y, 0.03]}>
-            <planeGeometry args={[0.46, 0.014]} />
-            <meshStandardMaterial color="#5f6c67" roughness={1} />
-          </mesh>
-        ))}
-        <mesh position={[-0.21, -0.13, 0.03]}>
-          <planeGeometry args={[0.16, 0.14]} />
-          <meshStandardMaterial color="#7d8983" roughness={0.98} />
+          <meshStandardMaterial color="#e9e4d6" roughness={0.96} side={DoubleSide} />
         </mesh>
       </group>
     );
   }
 
   if (shape === "tissue") {
+    const maps = tissueMaps();
     return (
       <group rotation={[0.16, -0.24, -0.18]}>
         {TISSUE_WADS.map((wad, index) => (
-          <mesh geometry={wad.geometry} key={index} position={wad.position} scale={wad.scale}>
-            <meshStandardMaterial color={wad.color} flatShading roughness={0.97} />
+          <mesh castShadow geometry={wad.geometry} key={index} position={wad.position} scale={wad.scale}>
+            <meshStandardMaterial {...maps} color={wad.color} flatShading />
           </mesh>
         ))}
         {TISSUE_FOLDS.map((fold, index) => (
           <mesh
+            castShadow
             geometry={TISSUE_FOLD_PLATE}
             key={index}
             position={fold.position}
             rotation={fold.rotation}
           >
-            <meshStandardMaterial color="#faf7ef" roughness={0.98} side={DoubleSide} />
+            <meshStandardMaterial {...maps} side={DoubleSide} />
           </mesh>
         ))}
-        <mesh position={[0.04, -0.02, 0.22]} scale={[0.4, 0.13, 0.05]}>
-          <sphereGeometry args={[0.5, 12, 8]} />
-          <meshStandardMaterial color="#b5a693" roughness={1} />
-        </mesh>
       </group>
     );
   }
 
   if (shape === "diaper") {
+    const print = diaperPrintTexture();
     return (
       <group rotation={[0.1, 0.3, Math.PI / 2]}>
-        <mesh geometry={DIAPER_ROLL}>
-          <meshStandardMaterial color="#f5f2e9" roughness={0.94} />
+        <mesh castShadow geometry={DIAPER_ROLL}>
+          <meshStandardMaterial color="#ffffff" map={print} roughness={0.92} />
         </mesh>
         <mesh geometry={DIAPER_WRAP}>
-          <meshStandardMaterial color="#e7e3d8" roughness={0.95} />
+          <meshStandardMaterial color="#ebe8df" roughness={0.95} />
         </mesh>
         {[-0.16, 0.16].map((y) => (
           <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.332, 0.021, 8, 30]} />
-            <meshStandardMaterial color="#84c0d8" roughness={0.84} />
+            <meshPhysicalMaterial clearcoat={0.6} color="#84c0d8" roughness={0.5} />
           </mesh>
         ))}
         <mesh position={[0, 0.37, 0]} scale={[0.9, 0.5, 0.9]}>
@@ -457,28 +449,20 @@ export function WasteObject({ shape }: WasteObjectProps) {
   if (shape === "battery") {
     return (
       <group rotation={[0, 0.4, Math.PI / 2]}>
-        <mesh geometry={BATTERY_BODY}>
-          <meshStandardMaterial color="#3a3f45" metalness={0.4} roughness={0.44} />
+        <mesh castShadow geometry={BATTERY_BODY}>
+          <meshStandardMaterial color="#9aa0a4" metalness={0.85} roughness={0.28} />
         </mesh>
         <mesh position={[0, 0.48, 0]}>
           <cylinderGeometry args={[0.113, 0.113, 0.09, 20]} />
-          <meshStandardMaterial color="#c9cdd0" metalness={0.7} roughness={0.24} />
+          <meshStandardMaterial color="#d2d6d8" metalness={0.9} roughness={0.18} />
         </mesh>
         <mesh position={[0, -0.53, 0]}>
           <cylinderGeometry args={[0.247, 0.247, 0.035, 24]} />
-          <meshStandardMaterial color="#b9bec1" metalness={0.66} roughness={0.28} />
+          <meshStandardMaterial color="#c1c6c9" metalness={0.9} roughness={0.22} />
         </mesh>
-        <mesh position={[0, -0.02, 0]}>
-          <cylinderGeometry args={[0.288, 0.288, 0.86, 28, 1, true]} />
-          <meshStandardMaterial color="#cf4b28" roughness={0.5} side={DoubleSide} />
-        </mesh>
-        <mesh position={[0, -0.36, 0]}>
-          <cylinderGeometry args={[0.29, 0.29, 0.14, 28, 1, true]} />
-          <meshStandardMaterial color="#efe7d4" roughness={0.58} side={DoubleSide} />
-        </mesh>
-        <mesh position={[0, 0.3, 0]}>
-          <cylinderGeometry args={[0.292, 0.292, 0.1, 28, 1, true]} />
-          <meshStandardMaterial color="#23262a" roughness={0.55} side={DoubleSide} />
+        <mesh position={[0, -0.07, 0]} rotation={[0, 0, 0]}>
+          <cylinderGeometry args={[0.288, 0.288, 0.9, 32, 1, true]} />
+          <meshPhysicalMaterial clearcoat={0.8} clearcoatRoughness={0.2} map={batteryWrapTexture()} roughness={0.4} side={DoubleSide} />
         </mesh>
       </group>
     );
@@ -486,39 +470,29 @@ export function WasteObject({ shape }: WasteObjectProps) {
 
   return (
     <group rotation={[0.06, 0.34, -0.08]}>
-      <mesh geometry={BULB_GLASS}>
-        <meshPhysicalMaterial
-          color="#f6f0dd"
-          transmission={0.5}
-          thickness={0.2}
-          transparent
-          opacity={0.72}
-          roughness={0.1}
-          side={DoubleSide}
-        />
+      <mesh castShadow geometry={BULB_GLASS}>
+        <GlassMaterial color="#fbf6ea" thickness={0.08} />
       </mesh>
       <mesh position={[0, 0.16, 0]}>
         <torusGeometry args={[0.055, 0.008, 6, 18]} />
-        <meshStandardMaterial color="#a8853f" roughness={0.5} />
+        <meshStandardMaterial color="#8a6a33" metalness={0.6} roughness={0.4} />
       </mesh>
       {[-0.03, 0.03].map((x) => (
         <mesh key={x} position={[x, 0.02, 0]}>
           <cylinderGeometry args={[0.006, 0.006, 0.26, 6]} />
-          <meshStandardMaterial color="#8d8a80" metalness={0.4} roughness={0.6} />
+          <meshStandardMaterial color="#8d8a80" metalness={0.6} roughness={0.5} />
         </mesh>
       ))}
-      <mesh geometry={BULB_BASE}>
-        <meshStandardMaterial color="#8e8a7f" metalness={0.68} roughness={0.34} />
+      <mesh castShadow geometry={BULB_THREAD}>
+        <meshStandardMaterial color="#c9c6bd" metalness={0.9} roughness={0.26} />
       </mesh>
-      {[-0.3, -0.38, -0.46].map((y) => (
-        <mesh key={y} position={[0, y, 0]}>
-          <torusGeometry args={[0.158, 0.018, 7, 24]} />
-          <meshStandardMaterial color="#726e64" metalness={0.62} roughness={0.4} />
-        </mesh>
-      ))}
-      <mesh position={[0, -0.65, 0]}>
-        <sphereGeometry args={[0.062, 14, 10]} />
-        <meshStandardMaterial color="#3f3e3a" metalness={0.5} roughness={0.5} />
+      <mesh position={[0, -0.6, 0]}>
+        <cylinderGeometry args={[0.07, 0.05, 0.05, 16]} />
+        <meshStandardMaterial color="#2c2b28" roughness={0.6} />
+      </mesh>
+      <mesh position={[0, -0.64, 0]}>
+        <sphereGeometry args={[0.035, 12, 8]} />
+        <meshStandardMaterial color="#b9b5ab" metalness={0.9} roughness={0.3} />
       </mesh>
     </group>
   );
