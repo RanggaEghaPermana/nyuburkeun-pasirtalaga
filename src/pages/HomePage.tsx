@@ -31,6 +31,7 @@ const lessons = [
   { title: "Eco Enzyme", to: "/eco-enzyme", image: assets.home.lessonEco, tone: "brand" },
   { title: "Pemanfaatan Sampah", to: "/pemanfaatan", image: assets.home.lessonUses, tone: "neutral" },
   { title: "Strategi Pemasaran dan Branding Penjualan", to: "/peluang-usaha", image: assets.home.lessonBusiness, tone: "neutral", wide: true },
+  { title: "Pendamping Praktik", to: "/pendamping-praktik", image: assets.compost.bucket, tone: "brand", wide: true },
 ] as const;
 
 const faqs = [

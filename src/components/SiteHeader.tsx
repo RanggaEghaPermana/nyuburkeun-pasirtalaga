@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 const navItems = [
   { label: "Beranda", to: "/" },
   { label: "Materi", to: "/#materi" },
+  { label: "Pendamping", to: "/pendamping-praktik" },
   { label: "FAQ", to: "/#faq" },
 ];
 
@@ -49,7 +50,7 @@ export function SiteHeader() {
 
         <nav id={menuId} className={`site-nav${open ? " is-open" : ""}`} aria-label="Navigasi utama">
           {navItems.map((item) => {
-            const active = item.to === "/" && location.pathname === "/" && !location.hash;
+            const active = item.to === location.pathname && !location.hash;
             return (
               <Link
                 key={item.label}

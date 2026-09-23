@@ -8,6 +8,7 @@ export function SiteFooter() {
         <nav aria-label="Navigasi footer">
           <Link to="/">Beranda</Link>
           <Link to="/#materi">Materi</Link>
+          <Link to="/pendamping-praktik">Pendamping Praktik</Link>
           <Link to="/#faq">FAQ</Link>
         </nav>
       </div>
